@@ -7,16 +7,19 @@ export interface ConnectedAgent {
   lastPing: number;
 }
 
-interface CommandPayload {
+export interface CommandPayload {
   version: string;
   command: string;
   params: Record<string, unknown>;
   timestamp: number;
 }
 
-interface CommandResponse {
+export interface CommandResponse {
   command: string;
-  [key: string]: unknown;
+  success: boolean;
+  message: string;
+  data?: any;
+  [key: string]: any;
 }
 
 export class ConnectionManager {
@@ -76,7 +79,7 @@ export class ConnectionManager {
 
       const messageHandler = (data: Buffer | ArrayBuffer | Buffer[]): void => {
         try {
-          const response: CommandResponse = JSON.parse(data.toString());
+          const response = JSON.parse(data.toString()) as CommandResponse;
           if (response.command === payload.command) {
             cleanup();
             resolve(response);

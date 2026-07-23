@@ -5,6 +5,7 @@ import { loadAndValidateConfig } from './config';
 import { ConnectionManager } from './websocket/connectionManager';
 import { TokenValidator } from './auth/tokenValidator';
 import { createCommandRouter } from './routes/commandRouter';
+import { createAlexaRouter } from './routes/alexaRouter';
 
 const config = loadAndValidateConfig();
 const app = express();
@@ -21,6 +22,10 @@ app.get('/health', (_req: express.Request, res: express.Response): void => {
   });
 });
 
+// Alexa skill direct HTTPS webhook endpoint (verified inside the router via optional Skill ID)
+app.use('/api', createAlexaRouter(connectionManager, config.alexaSkillId));
+
+// Secure REST Router for external API triggers (requires X-Skill-Secret header)
 app.use('/api', tokenValidator.validateSkillSecretMiddleware, createCommandRouter(connectionManager));
 
 const server = http.createServer(app);

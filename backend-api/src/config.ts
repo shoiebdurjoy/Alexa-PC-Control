@@ -7,6 +7,7 @@ export interface AppConfig {
   nodeEnv: string;
   agentSecretToken: string;
   alexaSkillSecret: string;
+  alexaSkillId?: string;
 }
 
 export function loadAndValidateConfig(): AppConfig {
@@ -18,6 +19,7 @@ export function loadAndValidateConfig(): AppConfig {
 
   const agentSecretToken = process.env.AGENT_SECRET_TOKEN;
   const alexaSkillSecret = process.env.ALEXA_SKILL_SECRET;
+  const alexaSkillId = process.env.ALEXA_SKILL_ID;
 
   const missing: string[] = [];
   if (!agentSecretToken) missing.push('AGENT_SECRET_TOKEN');
@@ -35,6 +37,7 @@ export function loadAndValidateConfig(): AppConfig {
     port,
     nodeEnv: process.env.NODE_ENV || 'development',
     agentSecretToken: agentSecretToken || 'DEV_AGENT_SECRET_FALLBACK_TOKEN_123',
-    alexaSkillSecret: alexaSkillSecret || 'DEV_ALEXA_SKILL_SECRET_FALLBACK_456'
+    alexaSkillSecret: alexaSkillSecret || 'DEV_ALEXA_SKILL_SECRET_FALLBACK_456',
+    alexaSkillId
   };
 }
