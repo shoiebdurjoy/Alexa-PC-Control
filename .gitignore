@@ -36,3 +36,6 @@ Desktop.ini
 
 # Production secrets (never commit real tokens)
 appsettings.json
+
+# Binaries (never commit compiled executables)
+windows-pc-agent/AlexaPCAgent.exe
