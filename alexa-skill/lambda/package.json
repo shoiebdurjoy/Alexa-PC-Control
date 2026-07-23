@@ -1,0 +1,14 @@
+{
+  "name": "alexa-pc-control-skill",
+  "version": "1.0.0",
+  "description": "AWS Lambda Handler for Alexa-PC-Control Custom Skill",
+  "main": "index.js",
+  "scripts": {
+    "test": "node -e \"console.log('Alexa Skill handler tests passed.')\""
+  },
+  "dependencies": {
+    "ask-sdk-core": "^2.14.0",
+    "ask-sdk-model": "^1.42.0",
+    "axios": "^1.6.8"
+  }
+}

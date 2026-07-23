@@ -1,0 +1,124 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "my computer",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "LockIntent",
+          "slots": [],
+          "samples": [
+            "lock the PC",
+            "lock the computer",
+            "lock my computer",
+            "lock PC"
+          ]
+        },
+        {
+          "name": "PowerIntent",
+          "slots": [
+            {
+              "name": "Action",
+              "type": "POWER_ACTION_TYPE"
+            },
+            {
+              "name": "DurationMinutes",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "put the PC to {Action}",
+            "put the computer to {Action}",
+            "{Action} the PC",
+            "{Action} the computer",
+            "{Action} the PC in {DurationMinutes} minutes",
+            "{Action} the computer in {DurationMinutes} minutes",
+            "put the PC to {Action} in {DurationMinutes} minutes"
+          ]
+        },
+        {
+          "name": "CancelScheduleIntent",
+          "slots": [],
+          "samples": [
+            "cancel shutdown",
+            "cancel sleep",
+            "cancel restart",
+            "cancel scheduled power action",
+            "cancel schedule"
+          ]
+        },
+        {
+          "name": "VolumeControlIntent",
+          "slots": [
+            {
+              "name": "VolumeAction",
+              "type": "VOLUME_ACTION_TYPE"
+            }
+          ],
+          "samples": [
+            "{VolumeAction} the PC",
+            "{VolumeAction} the computer",
+            "{VolumeAction} volume",
+            "{VolumeAction}"
+          ]
+        },
+        {
+          "name": "SetVolumeIntent",
+          "slots": [
+            {
+              "name": "VolumePercent",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "set volume to {VolumePercent} percent",
+            "set volume to {VolumePercent}",
+            "set PC volume to {VolumePercent} percent",
+            "change volume to {VolumePercent}"
+          ]
+        },
+        {
+          "name": "PCStatusIntent",
+          "slots": [],
+          "samples": [
+            "for status",
+            "how is the PC",
+            "what is the status",
+            "PC status",
+            "status of my computer"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "POWER_ACTION_TYPE",
+          "values": [
+            { "name": { "value": "shutdown", "synonyms": ["shut down", "turn off"] } },
+            { "name": { "value": "sleep", "synonyms": ["standby"] } },
+            { "name": { "value": "restart", "synonyms": ["reboot"] } }
+          ]
+        },
+        {
+          "name": "VOLUME_ACTION_TYPE",
+          "values": [
+            { "name": { "value": "mute", "synonyms": ["silence"] } },
+            { "name": { "value": "unmute", "synonyms": ["unsilence"] } },
+            { "name": { "value": "increase volume", "synonyms": ["turn up volume", "louder"] } },
+            { "name": { "value": "decrease volume", "synonyms": ["turn down volume", "quieter"] } }
+          ]
+        }
+      ]
+    }
+  }
+}
