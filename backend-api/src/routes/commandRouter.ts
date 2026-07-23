@@ -49,8 +49,10 @@ export function createCommandRouter(connectionManager: ConnectionManager): Route
     }
 
     try {
+      const requestId = require('crypto').randomUUID();
       const payload = {
         version: '1.0',
+        requestId,
         command: normalizedCmd,
         params: params && typeof params === 'object' ? params : {},
         timestamp: Date.now()

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { ConnectionManager, CommandResponse, CommandPayload } from '../websocket/connectionManager';
 
 interface AlexaRequestEnvelope {
@@ -9,6 +10,8 @@ interface AlexaRequestEnvelope {
   };
   request?: {
     type: string;
+    requestId?: string;
+    timestamp?: string;
     intent?: {
       name: string;
       slots?: Record<string, {
@@ -20,6 +23,9 @@ interface AlexaRequestEnvelope {
   };
 }
 
+// In-memory sliding set to deduplicate identical retried requests from Alexa (pruned via TTL)
+const processedAlexaRequestIds = new Set<string>();
+
 export function createAlexaRouter(connectionManager: ConnectionManager, skillId: string | undefined): Router {
   const router = Router();
 
@@ -28,11 +34,26 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
 
     // Optional: Validate Alexa Skill ID if configured to prevent unauthorized requests
     if (skillId && envelope.session?.application?.applicationId !== skillId) {
+      console.warn(`[Security Alert] Request rejected. Invalid Skill ID: ${envelope.session?.application?.applicationId}`);
       res.status(403).json({ success: false, message: 'Forbidden: Invalid Alexa Skill ID' });
       return;
     }
 
     const requestType = envelope.request?.type;
+    const alexaRequestId = envelope.request?.requestId || crypto.randomUUID();
+
+    // Prevent duplicate execution if Alexa retries the same request within its retry window
+    if (envelope.request?.requestId) {
+      if (processedAlexaRequestIds.has(alexaRequestId)) {
+        console.log(`[Deduplication] [ReqID: ${alexaRequestId}] Duplicate Alexa request ignored.`);
+        res.json(buildAlexaResponse('Ignoring duplicate command request.'));
+        return;
+      }
+      // Add to processed registry and auto-prune after 2 minutes
+      processedAlexaRequestIds.add(alexaRequestId);
+      setTimeout(() => processedAlexaRequestIds.delete(alexaRequestId), 120000);
+    }
+
     if (requestType === 'LaunchRequest') {
       res.json(buildAlexaResponse('Welcome to PC Control. You can say lock the PC, set volume, or ask for status.'));
       return;
@@ -121,6 +142,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
       if (command) {
         const payload: CommandPayload = {
           version: '1.0',
+          requestId: alexaRequestId,
           command,
           params,
           timestamp: Date.now()
@@ -141,7 +163,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
 
       res.json(buildAlexaResponse(responseMessage));
     } catch (error: any) {
-      console.error('[AlexaRouter Error]:', error.message);
+      console.error(`[AlexaRouter Error] [ReqID: ${alexaRequestId}]:`, error.message);
       res.json(buildAlexaResponse('Could not connect to backend server. Make sure your PC Agent is online.'));
     }
   });

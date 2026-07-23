@@ -25,27 +25,35 @@ function executeCommand(payload) {
         execSync('rundll32.exe user32.dll,LockWorkStation');
         return { success: true, message: 'PC workstation locked.' };
       } catch (e) {
-        return { success: false, message: 'Failed to lock workstation.' };
+        return { success: false, message: 'Failed to lock workstation: ' + e.message };
       }
 
     case 'SHUTDOWN': {
       const mins = params.durationMinutes || 0;
-      if (mins > 0) {
-        execSync(`shutdown /s /t ${mins * 60} /f`);
-        return { success: true, message: `PC shutdown scheduled in ${mins} minutes.` };
+      try {
+        if (mins > 0) {
+          execSync(`shutdown /s /t ${mins * 60} /f`);
+          return { success: true, message: `PC shutdown scheduled in ${mins} minutes.` };
+        }
+        execSync('shutdown /s /t 0 /f');
+        return { success: true, message: 'PC shutdown initiated.' };
+      } catch (e) {
+        return { success: false, message: 'Failed to schedule/execute shutdown: ' + e.message };
       }
-      execSync('shutdown /s /t 0 /f');
-      return { success: true, message: 'PC shutdown initiated.' };
     }
 
     case 'RESTART': {
       const mins = params.durationMinutes || 0;
-      if (mins > 0) {
-        execSync(`shutdown /r /t ${mins * 60} /f`);
-        return { success: true, message: `PC restart scheduled in ${mins} minutes.` };
+      try {
+        if (mins > 0) {
+          execSync(`shutdown /r /t ${mins * 60} /f`);
+          return { success: true, message: `PC restart scheduled in ${mins} minutes.` };
+        }
+        execSync('shutdown /r /t 0 /f');
+        return { success: true, message: 'PC restart initiated.' };
+      } catch (e) {
+        return { success: false, message: 'Failed to schedule/execute restart: ' + e.message };
       }
-      execSync('shutdown /r /t 0 /f');
-      return { success: true, message: 'PC restart initiated.' };
     }
 
     case 'SLEEP':
@@ -53,15 +61,15 @@ function executeCommand(payload) {
         execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0');
         return { success: true, message: 'PC put to sleep.' };
       } catch (e) {
-        return { success: false, message: 'Failed to put PC to sleep.' };
+        return { success: false, message: 'Failed to put PC to sleep: ' + e.message };
       }
 
     case 'CANCEL_SCHEDULE':
       try {
         execSync('shutdown /a');
-        return { success: true, message: 'Scheduled power action cancelled.' };
+        return { success: true, message: 'Scheduled PC power action cancelled.' };
       } catch (e) {
-        return { success: true, message: 'No pending power actions.' };
+        return { success: true, message: 'No pending power actions found to cancel.' };
       }
 
     case 'MUTE':
@@ -69,7 +77,7 @@ function executeCommand(payload) {
         execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]173)"');
         return { success: true, message: 'PC audio mute toggled.' };
       } catch (e) {
-        return { success: false, message: 'Failed to mute.' };
+        return { success: false, message: 'Failed to toggle mute: ' + e.message };
       }
 
     case 'UNMUTE':
@@ -77,7 +85,7 @@ function executeCommand(payload) {
         execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]173)"');
         return { success: true, message: 'PC audio unmute toggled.' };
       } catch (e) {
-        return { success: false, message: 'Failed to unmute.' };
+        return { success: false, message: 'Failed to toggle unmute: ' + e.message };
       }
 
     case 'VOLUME_UP':
@@ -85,7 +93,7 @@ function executeCommand(payload) {
         execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]175)"');
         return { success: true, message: 'PC volume increased.' };
       } catch (e) {
-        return { success: false, message: 'Failed to increase volume.' };
+        return { success: false, message: 'Failed to increase volume: ' + e.message };
       }
 
     case 'VOLUME_DOWN':
@@ -93,25 +101,20 @@ function executeCommand(payload) {
         execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]174)"');
         return { success: true, message: 'PC volume decreased.' };
       } catch (e) {
-        return { success: false, message: 'Failed to decrease volume.' };
+        return { success: false, message: 'Failed to decrease volume: ' + e.message };
       }
 
     case 'SET_VOLUME': {
       const level = Math.max(0, Math.min(100, params.volumePercent || 50));
       try {
-        const ps = `$wshell = New-Object -ComObject WScript.Shell; ` +
-          `$obj = New-Object -ComObject MMDeviceEnumerator.MMDeviceEnumerator; ` +
-          `Write-Host 'Volume set attempted to ${level}'`;
-        // Use nircmd if available, otherwise fallback
         try {
           execSync(`nircmd.exe setsysvolume ${Math.round(level * 655.35)}`);
         } catch (_) {
-          // Fallback: press volume keys to approximate
           execSync(`powershell -Command "1..50 | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]174) }; 1..${Math.round(level / 2)} | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]175) }"`);
         }
         return { success: true, message: `PC volume set to ${level} percent.` };
       } catch (e) {
-        return { success: false, message: 'Failed to set volume.' };
+        return { success: false, message: 'Failed to set volume: ' + e.message };
       }
     }
 
@@ -152,13 +155,15 @@ function connect() {
   ws.on('message', (data) => {
     try {
       const payload = JSON.parse(data.toString());
-      console.log(`[Agent] Received command: ${payload.command}`);
+      const requestId = payload.requestId || 'unknown-req-id';
+      console.log(`[Agent] [ReqID: ${requestId}] Received command: ${payload.command}`);
 
       const result = executeCommand(payload);
-      console.log(`[Agent] Result: ${result.message}`);
+      console.log(`[Agent] [ReqID: ${requestId}] Result: ${result.message}`);
 
       const response = JSON.stringify({
         version: '1.0',
+        requestId: requestId,
         command: payload.command,
         success: result.success,
         message: result.message,

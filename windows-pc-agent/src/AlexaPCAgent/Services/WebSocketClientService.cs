@@ -152,7 +152,7 @@ namespace AlexaPCAgent.Services
                 if (payload == null) return;
 
                 var result = await _commandRegistry.DispatchAsync(payload);
-                await SendResponseAsync(payload.Command, result);
+                await SendResponseAsync(payload.RequestId, payload.Command, result);
             }
             catch (Exception ex)
             {
@@ -160,7 +160,7 @@ namespace AlexaPCAgent.Services
             }
         }
 
-        private async Task SendResponseAsync(string command, CommandResult result)
+        private async Task SendResponseAsync(string requestId, string command, CommandResult result)
         {
             if (!IsConnected || _webSocket == null) return;
 
@@ -169,6 +169,7 @@ namespace AlexaPCAgent.Services
                 var response = new
                 {
                     version = "1.0",
+                    requestId = requestId,
                     command = command,
                     success = result.Success,
                     message = result.Message,

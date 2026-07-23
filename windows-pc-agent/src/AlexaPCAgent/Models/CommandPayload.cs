@@ -8,6 +8,9 @@ namespace AlexaPCAgent.Models
         [JsonPropertyName("version")]
         public string Version { get; set; } = "1.0";
 
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = string.Empty;
+
         [JsonPropertyName("command")]
         public string Command { get; set; } = string.Empty;
 
