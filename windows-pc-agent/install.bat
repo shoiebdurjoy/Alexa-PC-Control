@@ -26,6 +26,10 @@ echo [3/3] Setting up Windows Auto-Start...
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AlexaPCAgent" /d "wscript.exe \"%INSTALL_DIR%\AlexaPCAgent.vbs\"" /f >nul
 
 echo.
+echo Starting the Alexa PC Control Agent silently...
+start "" wscript.exe "%INSTALL_DIR%\AlexaPCAgent.vbs"
+
+echo.
 echo =======================================================
 echo  Installation Completed Successfully!
 echo =======================================================
@@ -33,7 +37,5 @@ echo.
 echo Next steps:
 echo 1. Open and configure your production token in:
 echo    %INSTALL_DIR%\appsettings.json
-echo 2. Run the agent silently by double-clicking:
-echo    %INSTALL_DIR%\AlexaPCAgent.vbs
 echo.
 pause
