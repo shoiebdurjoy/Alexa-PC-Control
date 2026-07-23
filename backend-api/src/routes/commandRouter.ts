@@ -13,7 +13,9 @@ const ALLOWED_COMMANDS = new Set([
   'VOLUME_UP',
   'VOLUME_DOWN',
   'SET_VOLUME',
-  'GET_STATUS'
+  'GET_STATUS',
+  'OPEN_APP',
+  'CLOSE_APP'
 ]);
 
 interface CommandRequestBody {
