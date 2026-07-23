@@ -97,4 +97,52 @@ namespace AlexaPCAgent.Commands
             return Task.FromResult(CommandResult.Fail("Failed to set master volume level."));
         }
     }
+
+    public class MediaPlayCommand : ICommand
+    {
+        public string CommandName => "MEDIA_PLAY";
+
+        public Task<CommandResult> ExecuteAsync(CommandPayload payload, CancellationToken cancellationToken)
+        {
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_PLAY_PAUSE, 0, Win32Api.KEYEVENTF_EXTENDEDKEY, UIntPtr.Zero);
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_PLAY_PAUSE, 0, Win32Api.KEYEVENTF_EXTENDEDKEY | Win32Api.KEYEVENTF_KEYUP, UIntPtr.Zero);
+            return Task.FromResult(CommandResult.Ok("PC media play toggled."));
+        }
+    }
+
+    public class MediaPauseCommand : ICommand
+    {
+        public string CommandName => "MEDIA_PAUSE";
+
+        public Task<CommandResult> ExecuteAsync(CommandPayload payload, CancellationToken cancellationToken)
+        {
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_PLAY_PAUSE, 0, Win32Api.KEYEVENTF_EXTENDEDKEY, UIntPtr.Zero);
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_PLAY_PAUSE, 0, Win32Api.KEYEVENTF_EXTENDEDKEY | Win32Api.KEYEVENTF_KEYUP, UIntPtr.Zero);
+            return Task.FromResult(CommandResult.Ok("PC media pause toggled."));
+        }
+    }
+
+    public class MediaNextCommand : ICommand
+    {
+        public string CommandName => "MEDIA_NEXT";
+
+        public Task<CommandResult> ExecuteAsync(CommandPayload payload, CancellationToken cancellationToken)
+        {
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_NEXT_TRACK, 0, Win32Api.KEYEVENTF_EXTENDEDKEY, UIntPtr.Zero);
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_NEXT_TRACK, 0, Win32Api.KEYEVENTF_EXTENDEDKEY | Win32Api.KEYEVENTF_KEYUP, UIntPtr.Zero);
+            return Task.FromResult(CommandResult.Ok("PC media skipped to next track."));
+        }
+    }
+
+    public class MediaPrevCommand : ICommand
+    {
+        public string CommandName => "MEDIA_PREV";
+
+        public Task<CommandResult> ExecuteAsync(CommandPayload payload, CancellationToken cancellationToken)
+        {
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_PREV_TRACK, 0, Win32Api.KEYEVENTF_EXTENDEDKEY, UIntPtr.Zero);
+            Win32Api.keybd_event(Win32Api.VK_MEDIA_PREV_TRACK, 0, Win32Api.KEYEVENTF_EXTENDEDKEY | Win32Api.KEYEVENTF_KEYUP, UIntPtr.Zero);
+            return Task.FromResult(CommandResult.Ok("PC media returned to previous track."));
+        }
+    }
 }

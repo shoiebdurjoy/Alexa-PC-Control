@@ -118,6 +118,31 @@ function executeCommand(payload) {
       }
     }
 
+    case 'MEDIA_PLAY':
+    case 'MEDIA_PAUSE':
+      try {
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]179)"');
+        return { success: true, message: 'PC media play/pause toggled.' };
+      } catch (e) {
+        return { success: false, message: 'Failed to toggle media play/pause: ' + e.message };
+      }
+
+    case 'MEDIA_NEXT':
+      try {
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]176)"');
+        return { success: true, message: 'PC media playing next track.' };
+      } catch (e) {
+        return { success: false, message: 'Failed to play next track: ' + e.message };
+      }
+
+    case 'MEDIA_PREV':
+      try {
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]177)"');
+        return { success: true, message: 'PC media playing previous track.' };
+      } catch (e) {
+        return { success: false, message: 'Failed to play previous track: ' + e.message };
+      }
+
     case 'GET_STATUS':
       return {
         success: true,

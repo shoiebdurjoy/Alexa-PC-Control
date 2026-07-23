@@ -63,6 +63,10 @@ namespace AlexaPCAgent
             _commandRegistry.Register(new VolumeUpCommand());
             _commandRegistry.Register(new VolumeDownCommand());
             _commandRegistry.Register(new SetVolumeCommand());
+            _commandRegistry.Register(new MediaPlayCommand());
+            _commandRegistry.Register(new MediaPauseCommand());
+            _commandRegistry.Register(new MediaNextCommand());
+            _commandRegistry.Register(new MediaPrevCommand());
             _commandRegistry.Register(new StatusCommand(_statusMonitor));
         }
 
