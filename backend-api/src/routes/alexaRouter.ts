@@ -205,7 +205,14 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
       res.json(buildAlexaResponse(responseMessage));
     } catch (error: any) {
       console.error(`[AlexaRouter Error] [ReqID: ${alexaRequestId}]:`, error.message);
-      res.json(buildAlexaResponse('Could not connect to backend server. Make sure your PC Agent is online.'));
+      const msg = error?.message || 'Internal server error';
+      if (msg.includes('not connected')) {
+        res.json(buildAlexaResponse('Your PC agent is not connected. Please make sure the agent is running on your computer.'));
+      } else if (msg.includes('timed out')) {
+        res.json(buildAlexaResponse('The command timed out. The PC agent did not respond.'));
+      } else {
+        res.json(buildAlexaResponse(`Command failed: ${msg}`));
+      }
     }
   });
 

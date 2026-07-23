@@ -23,43 +23,43 @@
   {
     "name": "Premiere Pro",
     "aliases": ["premiere", "adobe premiere", "adobe premiere pro", "premiere pro", "adobe premiere pro cc"],
-    "launchCommand": "start premiere",
+    "launchCommand": "start \"\" \"Adobe Premiere Pro.exe\"",
     "processName": "Adobe Premiere Pro",
     "allowForceKill": false
   },
   {
     "name": "CapCut",
     "aliases": ["capcut", "cap cut", "capcut desktop"],
-    "launchCommand": "start capcut",
+    "launchCommand": "\"%USERPROFILE%\\AppData\\Local\\CapCut\\Apps\\CapCut.exe\"",
     "processName": "CapCut",
     "allowForceKill": false
   },
   {
     "name": "Discord",
     "aliases": ["discord", "discord app"],
-    "launchCommand": "start discord",
+    "launchCommand": "\"%USERPROFILE%\\AppData\\Local\\Discord\\Update.exe\" --processStart Discord.exe",
     "processName": "Discord",
     "allowForceKill": true
   },
   {
     "name": "Spotify",
     "aliases": ["spotify", "spotify music", "spotify app"],
-    "launchCommand": "start spotify",
+    "launchCommand": "start spotify:",
     "processName": "Spotify",
     "allowForceKill": true
   },
   {
     "name": "Steam",
     "aliases": ["steam", "steam client", "steam app"],
-    "launchCommand": "start steam",
+    "launchCommand": "start steam://",
     "processName": "steam",
     "allowForceKill": true
   },
   {
     "name": "WhatsApp",
     "aliases": ["whatsapp", "whats app", "whatsapp messenger", "whatsapp desktop"],
-    "launchCommand": "start whatsapp",
-    "processName": "WhatsApp",
+    "launchCommand": "start whatsapp:",
+    "processName": "WhatsApp.Root",
     "allowForceKill": true
   },
   {
@@ -79,7 +79,7 @@
   {
     "name": "Calculator",
     "aliases": ["calculator", "calc", "calculator app", "windows calculator"],
-    "launchCommand": "start calc:",
+    "launchCommand": "start calc",
     "processName": "CalculatorApp",
     "allowForceKill": true
   },
