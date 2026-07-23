@@ -33,3 +33,6 @@ Desktop.ini
 
 # Logs
 *.log
+
+# Production secrets (never commit real tokens)
+appsettings.json
