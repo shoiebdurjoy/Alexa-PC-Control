@@ -23,6 +23,16 @@ interface AlexaRequestEnvelope {
   };
 }
 
+function getResolvedSlotValue(slot: any): string {
+  if (
+    slot?.resolutions?.resolutionsPerAuthority?.[0]?.status?.code === 'ER_SUCCESS_MATCH' &&
+    slot?.resolutions?.resolutionsPerAuthority?.[0]?.values?.[0]?.value?.name
+  ) {
+    return slot.resolutions.resolutionsPerAuthority[0].values[0].value.name;
+  }
+  return slot?.value || '';
+}
+
 // In-memory sliding set to deduplicate identical retried requests from Alexa (pruned via TTL)
 const processedAlexaRequestIds = new Set<string>();
 
@@ -133,7 +143,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
           break;
 
         case 'OpenApplicationIntent': {
-          const appName = slots.ApplicationName?.value || '';
+          const appName = getResolvedSlotValue(slots.ApplicationName);
           if (!appName) {
             res.json(buildAlexaResponse('Please specify the application you want to open.'));
             return;
@@ -145,7 +155,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
         }
 
         case 'CloseApplicationIntent': {
-          const appName = slots.ApplicationName?.value || '';
+          const appName = getResolvedSlotValue(slots.ApplicationName);
           if (!appName) {
             res.json(buildAlexaResponse('Please specify the application you want to close.'));
             return;

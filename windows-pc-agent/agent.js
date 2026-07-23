@@ -85,6 +85,41 @@ function schedulePowerAction(action, minutes) {
   });
 }
 
+function normalizeName(str) {
+  return (str || '')
+    .toLowerCase()
+    .replace(/[\s\-_.\u2010-\u2015\u2212\uff0d\u200b]/g, '')
+    .trim();
+}
+
+function findAppInRegistry(appQuery) {
+  if (!appQuery) return null;
+  const queryLower = appQuery.toLowerCase().trim();
+  const queryNormalized = normalizeName(appQuery);
+
+  // 1. Exact match (case-insensitive) on name or aliases
+  let app = appsRegistry.find(a => 
+    a.name.toLowerCase() === queryLower || 
+    (a.aliases && a.aliases.map(al => al.toLowerCase()).includes(queryLower))
+  );
+  if (app) return app;
+
+  // 2. Normalized match (stripped punctuation/spaces) on name or aliases
+  app = appsRegistry.find(a => 
+    normalizeName(a.name) === queryNormalized || 
+    (a.aliases && a.aliases.map(normalizeName).includes(queryNormalized))
+  );
+  if (app) return app;
+
+  // 3. Substring/fuzzy match
+  app = appsRegistry.find(a => 
+    normalizeName(a.name).includes(queryNormalized) || 
+    (a.aliases && a.aliases.some(al => normalizeName(al).includes(queryNormalized))) ||
+    queryNormalized.includes(normalizeName(a.name))
+  );
+  return app || null;
+}
+
 function executeCommand(payload) {
   const cmd = (payload.command || '').toUpperCase();
   const params = payload.params || {};
@@ -230,16 +265,12 @@ function executeCommand(payload) {
       }
 
     case 'OPEN_APP': {
-      const appQuery = (params.appName || '').toLowerCase().trim();
+      const appQuery = (params.appName || '').trim();
       if (!appQuery) {
         return { success: false, message: 'No application name specified.' };
       }
 
-      const app = appsRegistry.find(a => 
-        a.name.toLowerCase() === appQuery || 
-        (a.aliases && a.aliases.map(al => al.toLowerCase()).includes(appQuery))
-      );
-
+      const app = findAppInRegistry(appQuery);
       if (!app) {
         return { success: false, message: `Application ${params.appName} is not configured in the registry.` };
       }
@@ -261,7 +292,23 @@ function executeCommand(payload) {
           exec(resolvedCommand, (err) => {
             if (err) console.error(`[Agent] Failed to run launchCommand for ${app.name}:`, err.message);
           });
-          return { success: true, message: `Opened ${app.name}.` };
+
+          // Wait and verify launch
+          let launched = false;
+          for (let i = 0; i < 5; i++) {
+            execSync(`powershell -Command "Start-Sleep -Seconds 1"`, { stdio: 'ignore' });
+            try {
+              execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+              launched = true;
+              break;
+            } catch (_) {}
+          }
+
+          if (launched) {
+            return { success: true, message: `Opened ${app.name}.` };
+          } else {
+            return { success: false, message: `Failed to open ${app.name}: The application was started but the process could not be verified.` };
+          }
         }
       } catch (e) {
         return { success: false, message: `Failed to open ${app.name}: ${e.message}` };
@@ -269,16 +316,12 @@ function executeCommand(payload) {
     }
 
     case 'CLOSE_APP': {
-      const appQuery = (params.appName || '').toLowerCase().trim();
+      const appQuery = (params.appName || '').trim();
       if (!appQuery) {
         return { success: false, message: 'No application name specified.' };
       }
 
-      const app = appsRegistry.find(a => 
-        a.name.toLowerCase() === appQuery || 
-        (a.aliases && a.aliases.map(al => al.toLowerCase()).includes(appQuery))
-      );
-
+      const app = findAppInRegistry(appQuery);
       if (!app) {
         return { success: false, message: `Application ${params.appName} is not configured in the registry.` };
       }
@@ -312,7 +355,20 @@ function executeCommand(payload) {
             try {
               execSync(`taskkill /F /IM "${app.processName}.exe"`, { stdio: 'ignore' });
             } catch (_) {}
-            return { success: true, message: `Closed ${app.name}.` };
+
+            // Wait 1 second and verify it has exited
+            execSync(`powershell -Command "Start-Sleep -Seconds 1"`, { stdio: 'ignore' });
+            let stillRemains = false;
+            try {
+              execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+              stillRemains = true;
+            } catch (_) {}
+
+            if (stillRemains) {
+              return { success: false, message: `Failed to close ${app.name}: The process remains active after force-kill.` };
+            } else {
+              return { success: true, message: `Closed ${app.name}.` };
+            }
           } else {
             return {
               success: true,

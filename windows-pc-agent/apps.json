@@ -1,112 +1,112 @@
 [
   {
     "name": "Chrome",
-    "aliases": ["chrome", "google chrome", "chrome browser"],
+    "aliases": ["chrome", "google chrome", "chrome browser", "google chrome browser"],
     "launchCommand": "start chrome",
     "processName": "chrome",
     "allowForceKill": true
   },
   {
     "name": "Brave",
-    "aliases": ["brave", "brave browser"],
+    "aliases": ["brave", "brave browser", "brave web browser"],
     "launchCommand": "start brave",
     "processName": "brave",
     "allowForceKill": true
   },
   {
     "name": "VS Code",
-    "aliases": ["code", "visual studio code", "vs code"],
+    "aliases": ["code", "visual studio code", "vs code", "vscode", "v.s. code", "microsoft vs code"],
     "launchCommand": "start code",
     "processName": "code",
     "allowForceKill": false
   },
   {
     "name": "Premiere Pro",
-    "aliases": ["premiere", "adobe premiere", "adobe premiere pro", "premiere pro"],
+    "aliases": ["premiere", "adobe premiere", "adobe premiere pro", "premiere pro", "adobe premiere pro cc"],
     "launchCommand": "start premiere",
     "processName": "Adobe Premiere Pro",
     "allowForceKill": false
   },
   {
     "name": "CapCut",
-    "aliases": ["capcut", "cap cut"],
+    "aliases": ["capcut", "cap cut", "capcut desktop"],
     "launchCommand": "start capcut",
     "processName": "CapCut",
     "allowForceKill": false
   },
   {
     "name": "Discord",
-    "aliases": ["discord"],
+    "aliases": ["discord", "discord app"],
     "launchCommand": "start discord",
     "processName": "Discord",
     "allowForceKill": true
   },
   {
     "name": "Spotify",
-    "aliases": ["spotify"],
+    "aliases": ["spotify", "spotify music", "spotify app"],
     "launchCommand": "start spotify",
     "processName": "Spotify",
     "allowForceKill": true
   },
   {
     "name": "Steam",
-    "aliases": ["steam"],
+    "aliases": ["steam", "steam client", "steam app"],
     "launchCommand": "start steam",
     "processName": "steam",
     "allowForceKill": true
   },
   {
     "name": "WhatsApp",
-    "aliases": ["whatsapp", "whats app"],
+    "aliases": ["whatsapp", "whats app", "whatsapp messenger", "whatsapp desktop"],
     "launchCommand": "start whatsapp",
     "processName": "WhatsApp",
     "allowForceKill": true
   },
   {
     "name": "Messenger",
-    "aliases": ["messenger", "facebook messenger", "fb messenger"],
+    "aliases": ["messenger", "facebook messenger", "fb messenger", "messenger desktop"],
     "launchCommand": "start ms-messenger:",
     "processName": "Messenger",
     "allowForceKill": true
   },
   {
     "name": "Notepad",
-    "aliases": ["notepad", "note pad"],
+    "aliases": ["notepad", "note pad", "notepad app"],
     "launchCommand": "start notepad",
     "processName": "notepad",
     "allowForceKill": false
   },
   {
     "name": "Calculator",
-    "aliases": ["calculator", "calc"],
+    "aliases": ["calculator", "calc", "calculator app", "windows calculator"],
     "launchCommand": "start calc:",
     "processName": "CalculatorApp",
     "allowForceKill": true
   },
   {
     "name": "File Explorer",
-    "aliases": ["file explorer", "explorer", "my computer", "this pc"],
+    "aliases": ["file explorer", "explorer", "my computer", "this pc", "explorer.exe", "windows explorer"],
     "launchCommand": "start explorer",
     "processName": "explorer",
     "allowForceKill": false
   },
   {
     "name": "Task Manager",
-    "aliases": ["task manager", "taskmgr"],
+    "aliases": ["task manager", "taskmgr", "task manager app", "taskmgr.exe"],
     "launchCommand": "start taskmgr",
     "processName": "taskmgr",
     "allowForceKill": true
   },
   {
     "name": "Command Prompt",
-    "aliases": ["command prompt", "cmd"],
+    "aliases": ["command prompt", "cmd", "cmd.exe", "terminal", "command line"],
     "launchCommand": "start cmd",
     "processName": "cmd",
     "allowForceKill": true
   },
   {
     "name": "PowerShell",
-    "aliases": ["powershell", "power shell"],
+    "aliases": ["powershell", "power shell", "powershell.exe", "ps"],
     "launchCommand": "start powershell",
     "processName": "powershell",
     "allowForceKill": true

@@ -152,22 +152,22 @@
         {
           "name": "APPLICATION_NAME_TYPE",
           "values": [
-            { "name": { "value": "Chrome", "synonyms": ["Google Chrome", "Chrome Browser"] } },
-            { "name": { "value": "Brave", "synonyms": ["Brave Browser"] } },
-            { "name": { "value": "VS Code", "synonyms": ["Code", "Visual Studio Code"] } },
-            { "name": { "value": "Premiere Pro", "synonyms": ["Premiere", "Adobe Premiere", "Adobe Premiere Pro"] } },
-            { "name": { "value": "CapCut", "synonyms": ["Cap Cut"] } },
-            { "name": { "value": "Discord", "synonyms": [] } },
-            { "name": { "value": "Spotify", "synonyms": [] } },
-            { "name": { "value": "Steam", "synonyms": [] } },
-            { "name": { "value": "WhatsApp", "synonyms": ["Whats App"] } },
-            { "name": { "value": "Messenger", "synonyms": ["Facebook Messenger", "FB Messenger"] } },
-            { "name": { "value": "Notepad", "synonyms": ["Note Pad"] } },
-            { "name": { "value": "Calculator", "synonyms": ["Calc"] } },
-            { "name": { "value": "File Explorer", "synonyms": ["Explorer", "My Computer", "This PC"] } },
-            { "name": { "value": "Task Manager", "synonyms": ["Taskmgr"] } },
-            { "name": { "value": "Command Prompt", "synonyms": ["Cmd"] } },
-            { "name": { "value": "PowerShell", "synonyms": ["Power Shell"] } }
+            { "name": { "value": "Chrome", "synonyms": ["Google Chrome", "Chrome Browser", "Google Chrome Browser"] } },
+            { "name": { "value": "Brave", "synonyms": ["Brave Browser", "Brave Web Browser"] } },
+            { "name": { "value": "VS Code", "synonyms": ["Code", "Visual Studio Code", "VS Code", "vscode", "v.s. code", "microsoft vs code"] } },
+            { "name": { "value": "Premiere Pro", "synonyms": ["Premiere", "Adobe Premiere", "Adobe Premiere Pro", "Premiere Pro", "Adobe Premiere Pro CC"] } },
+            { "name": { "value": "CapCut", "synonyms": ["CapCut", "Cap Cut", "CapCut Desktop"] } },
+            { "name": { "value": "Discord", "synonyms": ["Discord App"] } },
+            { "name": { "value": "Spotify", "synonyms": ["Spotify Music", "Spotify App"] } },
+            { "name": { "value": "Steam", "synonyms": ["Steam Client", "Steam App"] } },
+            { "name": { "value": "WhatsApp", "synonyms": ["WhatsApp", "Whats App", "WhatsApp Messenger", "WhatsApp Desktop"] } },
+            { "name": { "value": "Messenger", "synonyms": ["Messenger", "Facebook Messenger", "FB Messenger", "Messenger Desktop"] } },
+            { "name": { "value": "Notepad", "synonyms": ["Note Pad", "Notepad App"] } },
+            { "name": { "value": "Calculator", "synonyms": ["Calc", "Calculator App", "Windows Calculator"] } },
+            { "name": { "value": "File Explorer", "synonyms": ["Explorer", "My Computer", "This PC", "explorer.exe", "Windows Explorer"] } },
+            { "name": { "value": "Task Manager", "synonyms": ["Taskmgr", "Task Manager App", "taskmgr.exe"] } },
+            { "name": { "value": "Command Prompt", "synonyms": ["Cmd", "cmd.exe", "Terminal", "Command Line"] } },
+            { "name": { "value": "PowerShell", "synonyms": ["Power Shell", "powershell.exe", "PS"] } }
           ]
         },
         {
