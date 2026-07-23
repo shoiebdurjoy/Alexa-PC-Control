@@ -88,7 +88,6 @@ namespace AlexaPCAgent
 
         private void OnStatusClick(object? sender, EventArgs e)
         {
-            var status = _statusMonitor.GetSystemStatus();
             MessageBox.Show(
                 $"Agent Connection: {(_wsClient.IsConnected ? "Online" : "Offline")}\n" +
                 $"Machine: {Environment.MachineName}\n" +
@@ -114,9 +113,20 @@ namespace AlexaPCAgent
 
         private void OnExitClick(object? sender, EventArgs e)
         {
-            _wsClient.Stop();
+            _wsClient.Dispose();
             _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
             Application.Exit();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _wsClient.Dispose();
+                _notifyIcon.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

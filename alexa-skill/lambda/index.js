@@ -1,10 +1,18 @@
 const Alexa = require('ask-sdk-core');
 const axios = require('axios');
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8080/api/command';
-const SKILL_SECRET = process.env.SKILL_SECRET || 'DEFAULT_SKILL_SECRET';
+const BACKEND_API_URL = process.env.BACKEND_API_URL;
+const SKILL_SECRET = process.env.SKILL_SECRET;
 
 async function sendBackendCommand(command, params = {}) {
+    if (!BACKEND_API_URL || !SKILL_SECRET) {
+        console.error('Lambda Environment Error: BACKEND_API_URL or SKILL_SECRET missing.');
+        return {
+            success: false,
+            message: 'Skill environment configuration is incomplete. Please set BACKEND_API_URL and SKILL_SECRET.'
+        };
+    }
+
     try {
         const response = await axios.post(
             BACKEND_API_URL,
@@ -14,7 +22,7 @@ async function sendBackendCommand(command, params = {}) {
                     'Content-Type': 'application/json',
                     'X-Skill-Secret': SKILL_SECRET
                 },
-                timeout: 4500
+                timeout: 3500
             }
         );
         return response.data;

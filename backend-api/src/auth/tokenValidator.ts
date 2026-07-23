@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 
 export class TokenValidator {
@@ -9,16 +10,26 @@ export class TokenValidator {
     this.skillSecret = skillSecret;
   }
 
+  private safeCompare(a: string, b: string): boolean {
+    if (!a || !b) return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+  }
+
   public validateAgentToken(token: string | string[] | undefined): boolean {
     if (!token) return false;
     const value = Array.isArray(token) ? token[0] : token;
-    return value === this.agentToken;
+    return this.safeCompare(value, this.agentToken);
   }
 
   public validateSkillSecretMiddleware = (req: Request, res: Response, next: NextFunction): void => {
     const headerSecret = req.headers['x-skill-secret'];
-    if (!headerSecret || headerSecret !== this.skillSecret) {
-      res.status(401).json({ error: 'Unauthorized: Invalid or missing X-Skill-Secret header' });
+    const value = Array.isArray(headerSecret) ? headerSecret[0] : headerSecret;
+
+    if (!value || !this.safeCompare(value, this.skillSecret)) {
+      res.status(401).json({ success: false, message: 'Unauthorized: Invalid or missing X-Skill-Secret header' });
       return;
     }
     next();

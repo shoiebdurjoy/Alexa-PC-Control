@@ -10,18 +10,20 @@ using AlexaPCAgent.Models;
 
 namespace AlexaPCAgent.Services
 {
-    public class WebSocketClientService
+    public class WebSocketClientService : IDisposable
     {
         private readonly string _serverUrl;
         private readonly string _agentToken;
         private readonly CommandRegistry _commandRegistry;
+        private readonly Random _jitterRandom = new();
         private ClientWebSocket? _webSocket;
         private CancellationTokenSource? _cts;
+        private bool _disposed;
 
         public event Action<bool>? OnConnectionStatusChanged;
         public event Action<string>? OnLogMessage;
 
-        public bool IsConnected => _webSocket?.State == WebSocketState.Open;
+        public bool IsConnected => _webSocket != null && _webSocket.State == WebSocketState.Open;
 
         public WebSocketClientService(string serverUrl, string agentToken, CommandRegistry commandRegistry)
         {
@@ -32,6 +34,7 @@ namespace AlexaPCAgent.Services
 
         public void Start()
         {
+            Stop();
             _cts = new CancellationTokenSource();
             _ = Task.Run(() => ConnectionLoopAsync(_cts.Token));
         }
@@ -39,16 +42,28 @@ namespace AlexaPCAgent.Services
         public void Stop()
         {
             _cts?.Cancel();
-            if (_webSocket != null && _webSocket.State == WebSocketState.Open)
+            _cts?.Dispose();
+            _cts = null;
+
+            if (_webSocket != null)
             {
-                _ = _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent Stopping", CancellationToken.None);
+                if (_webSocket.State == WebSocketState.Open)
+                {
+                    try
+                    {
+                        _ = _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent Stopping", CancellationToken.None);
+                    }
+                    catch { }
+                }
+                _webSocket.Dispose();
+                _webSocket = null;
             }
         }
 
         private async Task ConnectionLoopAsync(CancellationToken cancellationToken)
         {
-            int retryDelayMs = 1000;
-            const int maxRetryDelayMs = 30000;
+            int retryDelayMs = 2000;
+            const int maxRetryDelayMs = 60000;
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -63,9 +78,13 @@ namespace AlexaPCAgent.Services
                     
                     OnLogMessage?.Invoke("Connected to Backend WebSocket Server.");
                     OnConnectionStatusChanged?.Invoke(true);
-                    retryDelayMs = 1000; // Reset backoff on success
+                    retryDelayMs = 2000; // Reset backoff on successful connection
 
                     await ReceiveLoopAsync(_webSocket, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -74,14 +93,23 @@ namespace AlexaPCAgent.Services
                 finally
                 {
                     OnConnectionStatusChanged?.Invoke(false);
-                    _webSocket?.Dispose();
+                    try { _webSocket?.Dispose(); } catch { }
                     _webSocket = null;
                 }
 
                 if (!cancellationToken.IsCancellationRequested)
                 {
-                    OnLogMessage?.Invoke($"Reconnecting in {retryDelayMs / 1000}s...");
-                    await Task.Delay(retryDelayMs, cancellationToken);
+                    int jitter = _jitterRandom.Next(0, 1000);
+                    int delayWithJitter = retryDelayMs + jitter;
+                    OnLogMessage?.Invoke($"Reconnecting in {delayWithJitter / 1000}s...");
+                    try
+                    {
+                        await Task.Delay(delayWithJitter, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                     retryDelayMs = Math.Min(retryDelayMs * 2, maxRetryDelayMs);
                 }
             }
@@ -111,7 +139,6 @@ namespace AlexaPCAgent.Services
                 if (result.MessageType == WebSocketMessageType.Text)
                 {
                     string jsonMessage = Encoding.UTF8.GetString(ms.ToArray());
-                    OnLogMessage?.Invoke($"Received message: {jsonMessage}");
                     _ = ProcessMessageAsync(jsonMessage);
                 }
             }
@@ -157,6 +184,16 @@ namespace AlexaPCAgent.Services
             {
                 OnLogMessage?.Invoke($"Error sending response: {ex.Message}");
             }
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                Stop();
+                _disposed = true;
+            }
+            GC.SuppressFinalize(this);
         }
     }
 }

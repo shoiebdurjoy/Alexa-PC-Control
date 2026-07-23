@@ -1,29 +1,24 @@
 import http from 'http';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
-import dotenv from 'dotenv';
+import { loadAndValidateConfig } from './config';
 import { ConnectionManager } from './websocket/connectionManager';
 import { TokenValidator } from './auth/tokenValidator';
 import { createCommandRouter } from './routes/commandRouter';
 
-dotenv.config();
-
-const PORT = process.env.PORT || 8080;
-const AGENT_SECRET_TOKEN = process.env.AGENT_SECRET_TOKEN || 'DEFAULT_AGENT_SECRET_TOKEN';
-const ALEXA_SKILL_SECRET = process.env.ALEXA_SKILL_SECRET || 'DEFAULT_SKILL_SECRET';
-
+const config = loadAndValidateConfig();
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
-const tokenValidator = new TokenValidator(AGENT_SECRET_TOKEN, ALEXA_SKILL_SECRET);
+const tokenValidator = new TokenValidator(config.agentSecretToken, config.alexaSkillSecret);
 const connectionManager = new ConnectionManager();
 
-// Health check endpoint
+// Health check endpoint for Render
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
+  res.status(200).json({ status: 'ok', uptime: Math.round(process.uptime()), activeAgents: connectionManager.getActiveCount() });
 });
 
-// Secure API Command Router for Alexa Skill
+// Secure REST Router for Alexa Skill
 app.use('/api', tokenValidator.validateSkillSecretMiddleware, createCommandRouter(connectionManager));
 
 const server = http.createServer(app);
@@ -34,7 +29,7 @@ server.on('upgrade', (request, socket, head) => {
   const deviceIdHeader = (request.headers['x-device-id'] as string) || 'default-pc';
 
   if (!tokenValidator.validateAgentToken(agentTokenHeader)) {
-    console.warn(`[WebSocket Upgrade] Unauthorized connection attempt from ${request.socket.remoteAddress}`);
+    console.warn(`[Security Warning] Unauthorized WebSocket connection attempt from ${request.socket.remoteAddress}`);
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     socket.destroy();
     return;
@@ -57,8 +52,8 @@ wss.on('connection', (ws: WebSocket, request: http.IncomingMessage, deviceId: st
   });
 });
 
-// Keepalive Ping/Pong loop every 30 seconds
-setInterval(() => {
+// Ping/Pong keepalive loop every 30 seconds
+const pingInterval = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
@@ -66,10 +61,36 @@ setInterval(() => {
   });
 }, 30000);
 
-server.listen(PORT, () => {
+server.listen(config.port, () => {
   console.log(`=======================================================`);
-  console.log(` Alexa-PC-Control Backend API Server running on port ${PORT}`);
-  console.log(` WebSocket Hub: wss://0.0.0.0:${PORT}/ws`);
-  console.log(` Alexa REST endpoint: http://0.0.0.0:${PORT}/api/command`);
+  console.log(` Alexa-PC-Control Backend API Server (v1.1.0)`);
+  console.log(` Environment: ${config.nodeEnv}`);
+  console.log(` Listening on Port: ${config.port}`);
+  console.log(` Health Endpoint: http://0.0.0.0:${config.port}/health`);
   console.log(`=======================================================`);
 });
+
+// Graceful Shutdown Handling
+function gracefulShutdown(signal: string) {
+  console.log(`[Server Shutdown] Received ${signal}. Closing HTTP and WebSocket connections...`);
+  clearInterval(pingInterval);
+
+  wss.clients.forEach((ws) => {
+    try {
+      ws.close(1001, 'Server shutting down');
+    } catch {}
+  });
+
+  server.close(() => {
+    console.log('[Server Shutdown] HTTP server closed cleanly. Exiting.');
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error('[Server Shutdown] Forced exit due to timeout.');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
