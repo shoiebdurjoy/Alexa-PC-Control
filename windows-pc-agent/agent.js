@@ -15,6 +15,53 @@ let retryDelay = 2000;
 const MAX_RETRY = 60000;
 let ws = null;
 
+// In-memory power scheduler (survives network disconnects, runs in agent process)
+const activePowerTimers = new Map(); // Key: 'POWER_ACTION', Value: { timeoutId, action, scheduledTime }
+
+function triggerImmediatePowerAction(action) {
+  switch (action) {
+    case 'SHUTDOWN':
+      execSync('shutdown /s /t 0 /f');
+      break;
+    case 'RESTART':
+      execSync('shutdown /r /t 0 /f');
+      break;
+    case 'SLEEP':
+      execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0');
+      break;
+  }
+}
+
+function cancelActivePowerAction() {
+  const timer = activePowerTimers.get('POWER_ACTION');
+  if (timer) {
+    clearTimeout(timer.timeoutId);
+    activePowerTimers.delete('POWER_ACTION');
+    return true;
+  }
+  return false;
+}
+
+function schedulePowerAction(action, minutes) {
+  cancelActivePowerAction();
+  const delayMs = minutes * 60 * 1000;
+  
+  const timeoutId = setTimeout(() => {
+    activePowerTimers.delete('POWER_ACTION');
+    try {
+      triggerImmediatePowerAction(action);
+    } catch (e) {
+      console.error(`[Agent] Failed to execute scheduled action ${action}:`, e.message);
+    }
+  }, delayMs);
+
+  activePowerTimers.set('POWER_ACTION', {
+    timeoutId,
+    action,
+    scheduledTime: Date.now() + delayMs
+  });
+}
+
 function executeCommand(payload) {
   const cmd = (payload.command || '').toUpperCase();
   const params = payload.params || {};
@@ -32,13 +79,13 @@ function executeCommand(payload) {
       const mins = params.durationMinutes || 0;
       try {
         if (mins > 0) {
-          execSync(`shutdown /s /t ${mins * 60} /f`);
-          return { success: true, message: `PC shutdown scheduled in ${mins} minutes.` };
+          schedulePowerAction('SHUTDOWN', mins);
+          return { success: true, message: `PC shutdown scheduled in ${mins} minutes via internal scheduler.` };
         }
-        execSync('shutdown /s /t 0 /f');
+        triggerImmediatePowerAction('SHUTDOWN');
         return { success: true, message: 'PC shutdown initiated.' };
       } catch (e) {
-        return { success: false, message: 'Failed to schedule/execute shutdown: ' + e.message };
+        return { success: false, message: 'Failed to execute shutdown: ' + e.message };
       }
     }
 
@@ -46,31 +93,41 @@ function executeCommand(payload) {
       const mins = params.durationMinutes || 0;
       try {
         if (mins > 0) {
-          execSync(`shutdown /r /t ${mins * 60} /f`);
-          return { success: true, message: `PC restart scheduled in ${mins} minutes.` };
+          schedulePowerAction('RESTART', mins);
+          return { success: true, message: `PC restart scheduled in ${mins} minutes via internal scheduler.` };
         }
-        execSync('shutdown /r /t 0 /f');
+        triggerImmediatePowerAction('RESTART');
         return { success: true, message: 'PC restart initiated.' };
       } catch (e) {
-        return { success: false, message: 'Failed to schedule/execute restart: ' + e.message };
+        return { success: false, message: 'Failed to execute restart: ' + e.message };
       }
     }
 
-    case 'SLEEP':
+    case 'SLEEP': {
+      const mins = params.durationMinutes || 0;
       try {
-        execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0');
+        if (mins > 0) {
+          schedulePowerAction('SLEEP', mins);
+          return { success: true, message: `PC sleep scheduled in ${mins} minutes via internal scheduler.` };
+        }
+        triggerImmediatePowerAction('SLEEP');
         return { success: true, message: 'PC put to sleep.' };
       } catch (e) {
         return { success: false, message: 'Failed to put PC to sleep: ' + e.message };
       }
+    }
 
-    case 'CANCEL_SCHEDULE':
-      try {
-        execSync('shutdown /a');
-        return { success: true, message: 'Scheduled PC power action cancelled.' };
-      } catch (e) {
-        return { success: true, message: 'No pending power actions found to cancel.' };
-      }
+    case 'CANCEL_SCHEDULE': {
+      const cancelled = cancelActivePowerAction();
+      // Also trigger shutdown /a in case any legacy OS-level timer is active
+      try { execSync('shutdown /a'); } catch (_) {}
+      return { 
+        success: true, 
+        message: cancelled 
+          ? 'Scheduled PC power action cancelled.' 
+          : 'No pending scheduled power actions.' 
+      };
+    }
 
     case 'MUTE':
       try {
