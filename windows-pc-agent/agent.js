@@ -303,17 +303,26 @@ function executeCommand(payload) {
 
         execSync(`powershell -Command "Start-Sleep -Seconds 3"`, { stdio: 'ignore' });
 
+        let remains = false;
         try {
-          let remains = false;
-          try {
-            execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
-            remains = true;
-          } catch (_) {}
-
-          if (remains) {
-            execSync(`taskkill /F /IM "${app.processName}.exe"`, { stdio: 'ignore' });
-          }
+          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+          remains = true;
         } catch (_) {}
+
+        if (remains) {
+          const allowForce = app.allowForceKill === true;
+          if (allowForce) {
+            try {
+              execSync(`taskkill /F /IM "${app.processName}.exe"`, { stdio: 'ignore' });
+            } catch (_) {}
+            return { success: true, message: `Closed ${app.name}.` };
+          } else {
+            return {
+              success: true,
+              message: `${app.name} requires your confirmation to close because it may contain unsaved work.`
+            };
+          }
+        }
 
         return { success: true, message: `Closed ${app.name}.` };
       } catch (e) {
