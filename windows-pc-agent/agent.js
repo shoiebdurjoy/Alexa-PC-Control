@@ -7,8 +7,8 @@ const { execSync } = require('child_process');
 const configPath = path.join(__dirname, '..', 'windows-pc-agent', 'src', 'AlexaPCAgent', 'appsettings.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-const BACKEND_URL = config.BackendWebSocketUrl;
-const AGENT_TOKEN = config.AgentToken;
+const BACKEND_URL = process.env.BACKEND_URL || config.BackendWebSocketUrl;
+const AGENT_TOKEN = process.env.AGENT_TOKEN || config.AgentToken;
 const DEVICE_ID = require('os').hostname();
 
 let retryDelay = 2000;
@@ -226,7 +226,7 @@ function executeCommand(payload) {
 }
 
 function connect() {
-  console.log(`[Agent] Connecting to ${BACKEND_URL}...`);
+  console.log(`[${new Date().toISOString()}] [Agent] Connecting to ${BACKEND_URL}...`);
 
   ws = new WebSocket(BACKEND_URL, {
     headers: {
@@ -236,7 +236,7 @@ function connect() {
   });
 
   ws.on('open', () => {
-    console.log(`[Agent] Connected to Render backend. Device: ${DEVICE_ID}`);
+    console.log(`[${new Date().toISOString()}] [Agent] Connected to Render backend. Device: ${DEVICE_ID}`);
     retryDelay = 2000;
   });
 
@@ -244,10 +244,10 @@ function connect() {
     try {
       const payload = JSON.parse(data.toString());
       const requestId = payload.requestId || 'unknown-req-id';
-      console.log(`[Agent] [ReqID: ${requestId}] Received command: ${payload.command}`);
+      console.log(`[${new Date().toISOString()}] [Agent] [ReqID: ${requestId}] Received command: ${payload.command}`);
 
       const result = executeCommand(payload);
-      console.log(`[Agent] [ReqID: ${requestId}] Result: ${result.message}`);
+      console.log(`[${new Date().toISOString()}] [Agent] [ReqID: ${requestId}] Result: ${result.message}`);
 
       const response = JSON.stringify({
         version: '1.0',
@@ -261,19 +261,19 @@ function connect() {
 
       ws.send(response);
     } catch (e) {
-      console.error('[Agent] Error processing message:', e.message);
+      console.error(`[${new Date().toISOString()}] [Agent] Error processing message:`, e.message);
     }
   });
 
   ws.on('close', (code, reason) => {
-    console.log(`[Agent] Disconnected (code: ${code}). Reconnecting in ${retryDelay / 1000}s...`);
+    console.log(`[${new Date().toISOString()}] [Agent] Disconnected (code: ${code}). Reconnecting in ${retryDelay / 1000}s...`);
     const jitter = Math.random() * 1000;
     setTimeout(connect, retryDelay + jitter);
     retryDelay = Math.min(retryDelay * 2, MAX_RETRY);
   });
 
   ws.on('error', (err) => {
-    console.error(`[Agent] WebSocket error: ${err.message}`);
+    console.error(`[${new Date().toISOString()}] [Agent] WebSocket error: ${err.message}`);
   });
 
   ws.on('ping', () => {
