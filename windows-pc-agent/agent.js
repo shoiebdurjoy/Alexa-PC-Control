@@ -82,7 +82,9 @@ function executeCommand(payload) {
           schedulePowerAction('SHUTDOWN', mins);
           return { success: true, message: `PC shutdown scheduled in ${mins} minutes via internal scheduler.` };
         }
-        triggerImmediatePowerAction('SHUTDOWN');
+        setTimeout(() => {
+          try { triggerImmediatePowerAction('SHUTDOWN'); } catch (err) { console.error(err); }
+        }, 1000);
         return { success: true, message: 'PC shutdown initiated.' };
       } catch (e) {
         return { success: false, message: 'Failed to execute shutdown: ' + e.message };
@@ -96,7 +98,9 @@ function executeCommand(payload) {
           schedulePowerAction('RESTART', mins);
           return { success: true, message: `PC restart scheduled in ${mins} minutes via internal scheduler.` };
         }
-        triggerImmediatePowerAction('RESTART');
+        setTimeout(() => {
+          try { triggerImmediatePowerAction('RESTART'); } catch (err) { console.error(err); }
+        }, 1000);
         return { success: true, message: 'PC restart initiated.' };
       } catch (e) {
         return { success: false, message: 'Failed to execute restart: ' + e.message };
@@ -110,7 +114,9 @@ function executeCommand(payload) {
           schedulePowerAction('SLEEP', mins);
           return { success: true, message: `PC sleep scheduled in ${mins} minutes via internal scheduler.` };
         }
-        triggerImmediatePowerAction('SLEEP');
+        setTimeout(() => {
+          try { triggerImmediatePowerAction('SLEEP'); } catch (err) { console.error(err); }
+        }, 1000);
         return { success: true, message: 'PC put to sleep.' };
       } catch (e) {
         return { success: false, message: 'Failed to put PC to sleep: ' + e.message };
