@@ -6,10 +6,18 @@ import { ConnectionManager } from './websocket/connectionManager';
 import { TokenValidator } from './auth/tokenValidator';
 import { createCommandRouter } from './routes/commandRouter';
 import { createAlexaRouter } from './routes/alexaRouter';
+import { verifyAlexaRequest, ExtendedRequest } from './auth/alexaVerifier';
 
 const config = loadAndValidateConfig();
 const app = express();
-app.use(express.json({ limit: '10kb' }));
+
+// Capture raw body buffer for Alexa cryptographic signature verification
+app.use(express.json({
+  limit: '10kb',
+  verify: (req: ExtendedRequest, _res: express.Response, buf: Buffer): void => {
+    req.rawBody = buf;
+  }
+}));
 
 const tokenValidator = new TokenValidator(config.agentSecretToken, config.alexaSkillSecret);
 const connectionManager = new ConnectionManager();
@@ -22,8 +30,8 @@ app.get('/health', (_req: express.Request, res: express.Response): void => {
   });
 });
 
-// Alexa skill direct HTTPS webhook endpoint (verified inside the router via optional Skill ID)
-app.use('/api', createAlexaRouter(connectionManager, config.alexaSkillId));
+// Alexa skill direct HTTPS webhook endpoint (fully secured with signature & timestamp verifier)
+app.use('/api', verifyAlexaRequest, createAlexaRouter(connectionManager, config.alexaSkillId));
 
 // Secure REST Router for external API triggers (requires X-Skill-Secret header)
 app.use('/api', tokenValidator.validateSkillSecretMiddleware, createCommandRouter(connectionManager));
