@@ -15,8 +15,17 @@ copy /Y "AlexaPCAgent.exe" "%INSTALL_DIR%\AlexaPCAgent.exe" >nul
 copy /Y "AlexaPCAgent.vbs" "%INSTALL_DIR%\AlexaPCAgent.vbs" >nul
 
 if not exist "%INSTALL_DIR%\appsettings.json" (
-    echo [2/3] Creating appsettings.json from template...
-    copy /Y "src\AlexaPCAgent\appsettings.json.example" "%INSTALL_DIR%\appsettings.json" >nul
+    echo [2/3] Creating appsettings.json...
+    if exist "src\AlexaPCAgent\appsettings.json" (
+        copy /Y "src\AlexaPCAgent\appsettings.json" "%INSTALL_DIR%\appsettings.json" >nul
+        echo Configured appsettings.json found and copied.
+    ) else if exist "appsettings.json" (
+        copy /Y "appsettings.json" "%INSTALL_DIR%\appsettings.json" >nul
+        echo Configured appsettings.json found and copied.
+    ) else (
+        copy /Y "src\AlexaPCAgent\appsettings.json.example" "%INSTALL_DIR%\appsettings.json" >nul
+        echo Placeholder appsettings.json template created.
+    )
 ) else (
     echo [2/3] appsettings.json already exists. Preserving configuration.
 )
