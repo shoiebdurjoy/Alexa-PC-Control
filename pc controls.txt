@@ -1,0 +1,149 @@
+===========================================
+ALEXA MY COMPUTER - VOICE COMMANDS
+===========================================
+
+Invocation Name:
+Alexa, ask my computer to ...
+
+===========================================
+LOCK
+===========================================
+
+lock the PC
+lock the computer
+lock my computer
+lock PC
+
+===========================================
+SLEEP
+===========================================
+
+sleep the PC
+sleep the computer
+put the PC to sleep
+put the computer to sleep
+sleep the PC in 10 minutes
+sleep the computer in 10 minutes
+put the PC to sleep in 10 minutes
+
+Alternative:
+standby the PC
+standby the computer
+
+===========================================
+RESTART
+===========================================
+
+restart the PC
+restart the computer
+reboot the PC
+reboot the computer
+restart the PC in 5 minutes
+restart the computer in 5 minutes
+
+===========================================
+SHUTDOWN
+===========================================
+
+power down the PC
+power down the computer
+power down the PC in 10 minutes
+power down the computer in 10 minutes
+
+initiate shutdown
+initiate shutdown in 10 minutes
+
+deactivate the PC
+deactivate the computer
+
+NOTE:
+Avoid saying:
+❌ shutdown
+❌ shut down
+❌ turn off
+❌ power off
+❌ switch off
+
+These may be intercepted by Alexa itself.
+
+===========================================
+CANCEL SCHEDULED ACTION
+===========================================
+
+cancel shutdown
+cancel sleep
+cancel restart
+cancel scheduled power action
+cancel schedule
+
+===========================================
+STATUS
+===========================================
+
+for status
+how is the PC
+what is the status
+PC status
+status of my computer
+
+===========================================
+VOLUME
+===========================================
+
+mute
+unmute
+
+increase volume
+decrease volume
+
+turn up volume
+turn down volume
+
+louder
+quieter
+
+===========================================
+SET VOLUME
+===========================================
+
+set volume to 50 percent
+set volume to 75 percent
+set volume to 100 percent
+
+set volume to 50
+set volume to 75
+set volume to 100
+
+set PC volume to 50 percent
+
+change volume to 50
+
+===========================================
+EXAMPLES
+===========================================
+
+Alexa, ask my computer to lock the PC.
+
+Alexa, ask my computer to sleep.
+
+Alexa, ask my computer to sleep in 30 minutes.
+
+Alexa, ask my computer to restart.
+
+Alexa, ask my computer to reboot the computer.
+
+Alexa, ask my computer to power down the PC.
+
+Alexa, ask my computer to initiate shutdown.
+
+Alexa, ask my computer to cancel shutdown.
+
+Alexa, ask my computer what is the status.
+
+Alexa, ask my computer to mute.
+
+Alexa, ask my computer to increase volume.
+
+Alexa, ask my computer to set volume to 40 percent.
+
+===========================================

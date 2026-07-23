@@ -132,6 +132,30 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
           command = 'GET_STATUS';
           break;
 
+        case 'OpenApplicationIntent': {
+          const appName = slots.ApplicationName?.value || '';
+          if (!appName) {
+            res.json(buildAlexaResponse('Please specify the application you want to open.'));
+            return;
+          }
+          command = 'OPEN_APP';
+          params = { appName };
+          responseMessage = `Opening ${appName}.`;
+          break;
+        }
+
+        case 'CloseApplicationIntent': {
+          const appName = slots.ApplicationName?.value || '';
+          if (!appName) {
+            res.json(buildAlexaResponse('Please specify the application you want to close.'));
+            return;
+          }
+          command = 'CLOSE_APP';
+          params = { appName };
+          responseMessage = `Closing ${appName}.`;
+          break;
+        }
+
         case 'AMAZON.HelpIntent':
           res.json(buildAlexaResponse('You can say lock the PC, set volume to fifty percent, mute, or ask for status.'));
           return;

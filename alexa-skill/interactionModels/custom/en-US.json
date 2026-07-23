@@ -106,9 +106,70 @@
             "PC status",
             "status of my computer"
           ]
+        },
+        {
+          "name": "OpenApplicationIntent",
+          "slots": [
+            {
+              "name": "ApplicationName",
+              "type": "APPLICATION_NAME_TYPE"
+            }
+          ],
+          "samples": [
+            "open {ApplicationName}",
+            "launch {ApplicationName}",
+            "start {ApplicationName}",
+            "run {ApplicationName}",
+            "open the {ApplicationName}",
+            "launch the {ApplicationName}",
+            "start the {ApplicationName}",
+            "run the {ApplicationName}"
+          ]
+        },
+        {
+          "name": "CloseApplicationIntent",
+          "slots": [
+            {
+              "name": "ApplicationName",
+              "type": "APPLICATION_NAME_TYPE"
+            }
+          ],
+          "samples": [
+            "close {ApplicationName}",
+            "exit {ApplicationName}",
+            "quit {ApplicationName}",
+            "terminate {ApplicationName}",
+            "kill {ApplicationName}",
+            "close the {ApplicationName}",
+            "exit the {ApplicationName}",
+            "quit the {ApplicationName}",
+            "terminate the {ApplicationName}",
+            "kill the {ApplicationName}"
+          ]
         }
       ],
       "types": [
+        {
+          "name": "APPLICATION_NAME_TYPE",
+          "values": [
+            { "name": { "value": "Chrome", "synonyms": ["Google Chrome", "Chrome Browser"] } },
+            { "name": { "value": "Brave", "synonyms": ["Brave Browser"] } },
+            { "name": { "value": "VS Code", "synonyms": ["Code", "Visual Studio Code"] } },
+            { "name": { "value": "Premiere Pro", "synonyms": ["Premiere", "Adobe Premiere", "Adobe Premiere Pro"] } },
+            { "name": { "value": "CapCut", "synonyms": ["Cap Cut"] } },
+            { "name": { "value": "Discord", "synonyms": [] } },
+            { "name": { "value": "Spotify", "synonyms": [] } },
+            { "name": { "value": "Steam", "synonyms": [] } },
+            { "name": { "value": "WhatsApp", "synonyms": ["Whats App"] } },
+            { "name": { "value": "Messenger", "synonyms": ["Facebook Messenger", "FB Messenger"] } },
+            { "name": { "value": "Notepad", "synonyms": ["Note Pad"] } },
+            { "name": { "value": "Calculator", "synonyms": ["Calc"] } },
+            { "name": { "value": "File Explorer", "synonyms": ["Explorer", "My Computer", "This PC"] } },
+            { "name": { "value": "Task Manager", "synonyms": ["Taskmgr"] } },
+            { "name": { "value": "Command Prompt", "synonyms": ["Cmd"] } },
+            { "name": { "value": "PowerShell", "synonyms": ["Power Shell"] } }
+          ]
+        },
         {
           "name": "POWER_ACTION_TYPE",
           "values": [

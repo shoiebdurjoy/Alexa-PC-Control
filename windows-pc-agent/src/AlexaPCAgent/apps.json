@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Chrome",
+    "aliases": ["chrome", "google chrome", "chrome browser"],
+    "launchCommand": "start chrome",
+    "processName": "chrome"
+  },
+  {
+    "name": "Brave",
+    "aliases": ["brave", "brave browser"],
+    "launchCommand": "start brave",
+    "processName": "brave"
+  },
+  {
+    "name": "VS Code",
+    "aliases": ["code", "visual studio code", "vs code"],
+    "launchCommand": "start code",
+    "processName": "code"
+  },
+  {
+    "name": "Premiere Pro",
+    "aliases": ["premiere", "adobe premiere", "adobe premiere pro", "premiere pro"],
+    "launchCommand": "start premiere",
+    "processName": "Adobe Premiere Pro"
+  },
+  {
+    "name": "CapCut",
+    "aliases": ["capcut", "cap cut"],
+    "launchCommand": "start capcut",
+    "processName": "CapCut"
+  },
+  {
+    "name": "Discord",
+    "aliases": ["discord"],
+    "launchCommand": "start discord",
+    "processName": "Discord"
+  },
+  {
+    "name": "Spotify",
+    "aliases": ["spotify"],
+    "launchCommand": "start spotify",
+    "processName": "Spotify"
+  },
+  {
+    "name": "Steam",
+    "aliases": ["steam"],
+    "launchCommand": "start steam",
+    "processName": "steam"
+  },
+  {
+    "name": "WhatsApp",
+    "aliases": ["whatsapp", "whats app"],
+    "launchCommand": "start whatsapp",
+    "processName": "WhatsApp"
+  },
+  {
+    "name": "Messenger",
+    "aliases": ["messenger", "facebook messenger", "fb messenger"],
+    "launchCommand": "start ms-messenger:",
+    "processName": "Messenger"
+  },
+  {
+    "name": "Notepad",
+    "aliases": ["notepad", "note pad"],
+    "launchCommand": "start notepad",
+    "processName": "notepad"
+  },
+  {
+    "name": "Calculator",
+    "aliases": ["calculator", "calc"],
+    "launchCommand": "start calc:",
+    "processName": "CalculatorApp"
+  },
+  {
+    "name": "File Explorer",
+    "aliases": ["file explorer", "explorer", "my computer", "this pc"],
+    "launchCommand": "start explorer",
+    "processName": "explorer"
+  },
+  {
+    "name": "Task Manager",
+    "aliases": ["task manager", "taskmgr"],
+    "launchCommand": "start taskmgr",
+    "processName": "taskmgr"
+  },
+  {
+    "name": "Command Prompt",
+    "aliases": ["command prompt", "cmd"],
+    "launchCommand": "start cmd",
+    "processName": "cmd"
+  },
+  {
+    "name": "PowerShell",
+    "aliases": ["powershell", "power shell"],
+    "launchCommand": "start powershell",
+    "processName": "powershell"
+  }
+]

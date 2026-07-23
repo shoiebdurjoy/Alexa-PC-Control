@@ -16,6 +16,23 @@ if (isPkg) {
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
+// Load application registry (apps.json)
+let appsPath = '';
+if (isPkg) {
+  appsPath = path.join(path.dirname(process.execPath), 'apps.json');
+} else {
+  const localAppsPath = path.join(__dirname, 'apps.json');
+  const srcAppsPath = path.join(__dirname, 'src', 'AlexaPCAgent', 'apps.json');
+  appsPath = fs.existsSync(localAppsPath) ? localAppsPath : srcAppsPath;
+}
+
+let appsRegistry = [];
+try {
+  appsRegistry = JSON.parse(fs.readFileSync(appsPath, 'utf8'));
+} catch (err) {
+  console.error('[Agent] Failed to load apps.json registry:', err.message);
+}
+
 const BACKEND_URL = process.env.BACKEND_URL || config.BackendWebSocketUrl;
 const AGENT_TOKEN = process.env.AGENT_TOKEN || config.AgentToken;
 const DEVICE_ID = require('os').hostname();
@@ -214,6 +231,90 @@ function executeCommand(payload) {
       } catch (e) {
         return { success: false, message: 'Failed to play previous track: ' + e.message };
       }
+
+    case 'OPEN_APP': {
+      const appQuery = (params.appName || '').toLowerCase().trim();
+      if (!appQuery) {
+        return { success: false, message: 'No application name specified.' };
+      }
+
+      const app = appsRegistry.find(a => 
+        a.name.toLowerCase() === appQuery || 
+        (a.aliases && a.aliases.map(al => al.toLowerCase()).includes(appQuery))
+      );
+
+      if (!app) {
+        return { success: false, message: `Application ${params.appName} is not configured in the registry.` };
+      }
+
+      try {
+        let isRunning = false;
+        try {
+          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+          isRunning = true;
+        } catch (_) {}
+
+        if (isRunning) {
+          const psCommand = `$wshell = New-Object -ComObject Wscript.Shell; $p = Get-Process -Name '${app.processName}' -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { $wshell.AppActivate($p.Id) }`;
+          execSync(`powershell -Command "${psCommand}"`, { stdio: 'ignore' });
+          return { success: true, message: `${app.name} is already running. Brought to foreground.` };
+        } else {
+          const resolvedCommand = app.launchCommand.replace(/%([^%]+)%/g, (_, name) => process.env[name] || '%'+name+'%');
+          const { exec } = require('child_process');
+          exec(resolvedCommand, (err) => {
+            if (err) console.error(`[Agent] Failed to run launchCommand for ${app.name}:`, err.message);
+          });
+          return { success: true, message: `Opened ${app.name}.` };
+        }
+      } catch (e) {
+        return { success: false, message: `Failed to open ${app.name}: ${e.message}` };
+      }
+    }
+
+    case 'CLOSE_APP': {
+      const appQuery = (params.appName || '').toLowerCase().trim();
+      if (!appQuery) {
+        return { success: false, message: 'No application name specified.' };
+      }
+
+      const app = appsRegistry.find(a => 
+        a.name.toLowerCase() === appQuery || 
+        (a.aliases && a.aliases.map(al => al.toLowerCase()).includes(appQuery))
+      );
+
+      if (!app) {
+        return { success: false, message: `Application ${params.appName} is not configured in the registry.` };
+      }
+
+      try {
+        let isRunning = false;
+        try {
+          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+          isRunning = true;
+        } catch (_) {}
+
+        if (!isRunning) {
+          return { success: true, message: `${app.name} is not currently running.` };
+        }
+
+        const closeScript = `
+          $processes = Get-Process -Name '${app.processName}' -ErrorAction SilentlyContinue;
+          if ($processes) {
+              $processes | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { $_.CloseMainWindow() };
+              Start-Sleep -Seconds 3;
+              $remaining = Get-Process -Name '${app.processName}' -ErrorAction SilentlyContinue;
+              if ($remaining) {
+                  $remaining | ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue };
+              }
+          }
+        `.replace(/\n/g, ' ').trim();
+
+        execSync(`powershell -Command "${closeScript}"`, { stdio: 'ignore' });
+        return { success: true, message: `Closed ${app.name}.` };
+      } catch (e) {
+        return { success: false, message: `Failed to close ${app.name}: ${e.message}` };
+      }
+    }
 
     case 'GET_STATUS':
       return {

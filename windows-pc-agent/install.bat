@@ -13,6 +13,7 @@ echo.
 echo [1/3] Copying files...
 copy /Y "AlexaPCAgent.exe" "%INSTALL_DIR%\AlexaPCAgent.exe" >nul
 copy /Y "AlexaPCAgent.vbs" "%INSTALL_DIR%\AlexaPCAgent.vbs" >nul
+copy /Y "apps.json" "%INSTALL_DIR%\apps.json" >nul
 
 if not exist "%INSTALL_DIR%\appsettings.json" (
     echo [2/3] Creating appsettings.json...
