@@ -44,7 +44,15 @@
             "{Action} the computer",
             "{Action} the PC in {DurationMinutes} minutes",
             "{Action} the computer in {DurationMinutes} minutes",
-            "put the PC to {Action} in {DurationMinutes} minutes"
+            "put the PC to {Action} in {DurationMinutes} minutes",
+            "power down the PC",
+            "power down the computer",
+            "power down the PC in {DurationMinutes} minutes",
+            "power down the computer in {DurationMinutes} minutes",
+            "initiate shutdown",
+            "initiate shutdown in {DurationMinutes} minutes",
+            "deactivate the PC",
+            "deactivate the computer"
           ]
         },
         {
@@ -104,7 +112,7 @@
         {
           "name": "POWER_ACTION_TYPE",
           "values": [
-            { "name": { "value": "shutdown", "synonyms": ["shut down", "turn off"] } },
+            { "name": { "value": "shutdown", "synonyms": ["shut down", "turn off", "power down", "deactivate", "switch off", "power off"] } },
             { "name": { "value": "sleep", "synonyms": ["standby"] } },
             { "name": { "value": "restart", "synonyms": ["reboot"] } }
           ]
