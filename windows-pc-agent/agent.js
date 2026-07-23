@@ -297,19 +297,24 @@ function executeCommand(payload) {
           return { success: true, message: `${app.name} is not currently running.` };
         }
 
-        const closeScript = `
-          $processes = Get-Process -Name '${app.processName}' -ErrorAction SilentlyContinue;
-          if ($processes) {
-              $processes | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { $_.CloseMainWindow() };
-              Start-Sleep -Seconds 3;
-              $remaining = Get-Process -Name '${app.processName}' -ErrorAction SilentlyContinue;
-              if ($remaining) {
-                  $remaining | ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue };
-              }
-          }
-        `.replace(/\n/g, ' ').trim();
+        try {
+          execSync(`taskkill /IM "${app.processName}.exe"`, { stdio: 'ignore' });
+        } catch (_) {}
 
-        execSync(`powershell -Command "${closeScript}"`, { stdio: 'ignore' });
+        execSync(`powershell -Command "Start-Sleep -Seconds 3"`, { stdio: 'ignore' });
+
+        try {
+          let remains = false;
+          try {
+            execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+            remains = true;
+          } catch (_) {}
+
+          if (remains) {
+            execSync(`taskkill /F /IM "${app.processName}.exe"`, { stdio: 'ignore' });
+          }
+        } catch (_) {}
+
         return { success: true, message: `Closed ${app.name}.` };
       } catch (e) {
         return { success: false, message: `Failed to close ${app.name}: ${e.message}` };
