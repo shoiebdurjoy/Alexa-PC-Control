@@ -30,8 +30,11 @@ app.get('/health', (_req: express.Request, res: express.Response): void => {
   });
 });
 
-// Alexa skill direct HTTPS webhook endpoint (fully secured with signature & timestamp verifier)
-app.use('/api', verifyAlexaRequest, createAlexaRouter(connectionManager, config.alexaSkillId));
+// Apply Alexa HTTPS signature validation ONLY to the /api/alexa endpoint
+app.post('/api/alexa', verifyAlexaRequest);
+
+// Mount Alexa router
+app.use('/api', createAlexaRouter(connectionManager, config.alexaSkillId));
 
 // Secure REST Router for external API triggers (requires X-Skill-Secret header)
 app.use('/api', tokenValidator.validateSkillSecretMiddleware, createCommandRouter(connectionManager));

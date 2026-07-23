@@ -3,8 +3,17 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Load config from the C# agent's appsettings.json
-const configPath = path.join(__dirname, '..', 'windows-pc-agent', 'src', 'AlexaPCAgent', 'appsettings.json');
+const isPkg = typeof process.pkg !== 'undefined';
+let configPath = '';
+
+if (isPkg) {
+  configPath = path.join(path.dirname(process.execPath), 'appsettings.json');
+} else {
+  const localPath = path.join(__dirname, 'appsettings.json');
+  const srcPath = path.join(__dirname, 'src', 'AlexaPCAgent', 'appsettings.json');
+  configPath = fs.existsSync(localPath) ? localPath : srcPath;
+}
+
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 const BACKEND_URL = process.env.BACKEND_URL || config.BackendWebSocketUrl;
