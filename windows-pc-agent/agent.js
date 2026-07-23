@@ -5,26 +5,23 @@ const { execSync } = require('child_process');
 
 const isPkg = typeof process.pkg !== 'undefined';
 let configPath = '';
+let appsPath = '';
 
 if (isPkg) {
-  configPath = path.join(path.dirname(process.execPath), 'appsettings.json');
+  const appDataDir = path.join(process.env.APPDATA, 'AlexaPCAgent');
+  configPath = path.join(appDataDir, 'appsettings.json');
+  appsPath = path.join(appDataDir, 'apps.json');
 } else {
   const localPath = path.join(__dirname, 'appsettings.json');
   const srcPath = path.join(__dirname, 'src', 'AlexaPCAgent', 'appsettings.json');
   configPath = fs.existsSync(localPath) ? localPath : srcPath;
-}
 
-const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-
-// Load application registry (apps.json)
-let appsPath = '';
-if (isPkg) {
-  appsPath = path.join(path.dirname(process.execPath), 'apps.json');
-} else {
   const localAppsPath = path.join(__dirname, 'apps.json');
   const srcAppsPath = path.join(__dirname, 'src', 'AlexaPCAgent', 'apps.json');
   appsPath = fs.existsSync(localAppsPath) ? localAppsPath : srcAppsPath;
 }
+
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 let appsRegistry = [];
 try {
