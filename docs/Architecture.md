@@ -1,108 +1,46 @@
-# Architecture Specification
+# Architecture Specification (Render 24/7 Cloud Architecture)
 
 ## Overview
 
-`Alexa-PC-Control` is engineered for minimum end-to-end latency, reliability, security, and extensibility. The architecture connects Amazon Alexa to a Windows workstation via a persistent WebSocket cloud bridge.
+`Alexa-PC-Control` connects an Amazon Echo voice request to a Windows workstation via a **24/7 cloud backend hosted on Render**. The PC Agent initiates an **outbound-only, encrypted WebSocket (WSS) connection** to Render upon Windows login.
 
 ```
-+------------------+         HTTPS          +-------------------+
-|  Alexa Custom    | ---------------------> |   Backend API     |
-|     Skill        |                        | (WebSocket Hub)   |
-+------------------+                        +-------------------+
-                                                      ^
-                                                      | WSS (TLS WebSocket)
-                                                      | Sub-100ms Persistent
-                                                      v
-                                            +-------------------+
-                                            | Windows PC Agent  |
-                                            |  (C# System Tray) |
-                                            +-------------------+
-                                                      |
-                                                      | Native P/Invoke & WASAPI
-                                                      v
-                                            +-------------------+
-                                            |  Windows System   |
-                                            +-------------------+
+[ Amazon Echo ]
+       │
+       ▼ (Voice Utterance)
+[ Alexa Custom Skill ] (AWS Lambda)
+       │
+       ▼ (HTTPS REST POST /api/command)
+[ Render Backend Server ] (24/7 Web Service - Fastify / Express + WS Hub)
+       │
+       ▼ (Persistent Outbound TLS WebSocket: wss://alexa-pc-control.onrender.com/ws)
+[ Windows PC Agent ] (C# .NET 8 System Tray Application)
+       │
+       ▼ (Native Win32 & WASAPI P/Invoke)
+[ Windows Workstation ] (Lock, Master Volume, Power Management)
 ```
 
 ---
 
-## 1. Core Component Breakdown
+## Key Network & Security Advantages
 
-### 1.1 Alexa Custom Skill (`alexa-skill/`)
-- **Language**: Node.js 18+ (ASK SDK v2).
-- **Invocation Name**: `my computer`.
-- **Role**: Converts natural spoken utterances into strongly-typed `CommandPayload` JSON objects and relays them to the Backend API.
-- **Latency Optimization**: Uses minimal dependencies to minimize cold-start times on AWS Lambda or standalone HTTP runtime.
-
-### 1.2 Backend API Server (`backend-api/`)
-- **Technology**: Node.js + TypeScript (`Fastify` + `ws` or standard WebSocket server).
-- **Role**: Maintains persistent full-duplex WebSocket connections with PC Agents. When an HTTP endpoint receives a valid request from the Alexa Skill, it routes the payload to the registered WebSocket connection instantly.
-- **Connection Management**:
-  - Connection map stored in memory (`Map<DeviceId, WebSocket>`).
-  - Ping/Pong heartbeat every 30 seconds to maintain NAT table pinholes on home routers.
-  - Sub-10ms routing latency between HTTP POST receipt and WebSocket push.
-
-### 1.3 Windows PC Agent (`windows-pc-agent/`)
-- **Technology**: C# .NET 8 (Windows System Tray Application).
-- **Role**: Runs silently in the system tray (`NotifyIcon`), auto-starts with Windows (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`), maintains persistent WebSocket connection with automatic backoff reconnection, and executes native Windows APIs.
-- **Design Pattern**: **Command Pattern** using `ICommand` handlers registered in a central `CommandRegistry`.
+1. **Zero Incoming Ports / No Port Forwarding**: The Windows PC Agent connects *outward* to `wss://your-app.onrender.com/ws`. Home routers and firewalls permit outbound HTTPS/WSS traffic by default.
+2. **Permanent 24/7 Uptime**: The backend runs continuously on Render. When your PC is powered on, the agent instantly establishes its persistent socket.
+3. **Sub-100ms Latency**: Commands travel from Alexa to Render over HTTPS, and from Render to your PC over the pre-established WSS socket in milliseconds.
+4. **Mutual Secret Security**:
+   - `X-Skill-Secret`: Validates Alexa Skill HTTP triggers to Render.
+   - `X-Agent-Token`: Validates Windows PC Agent WebSocket connections to Render.
 
 ---
 
-## 2. Low-Latency Design Principles
+## Connection Flow Lifecycle
 
-1. **Persistent Duplex Sockets**: Eliminates HTTP connection setup overhead (handshake/TLS) for command execution. Sockets remain connected 24/7.
-2. **Native Win32 & CoreAudio Integrations**:
-   - Master volume changes execute directly through WASAPI `MMDevice` P/Invoke calls, achieving scalar volume updates in under 2ms.
-   - Session locking calls `user32.dll!LockWorkStation()` directly.
-3. **Async / Non-blocking Dispatching**: The C# agent processes commands on a high-throughput async event loop without blocking UI or socket receiver threads.
-
----
-
-## 3. Internal C# Scheduler Architecture
-
-```
-Voice Trigger -> "shutdown in 30 minutes"
-                       │
-                       ▼
-         +---------------------------+
-         | InternalSchedulerService  |
-         +---------------------------+
-                       │
-             Creates Task.Delay & CancellationTokenSource
-                       │
-       +---------------+---------------+
-       │                               │
-       ▼                               ▼
-Disconnect Occurs?            "cancel shutdown" Voice Trigger
-       │                               │
-   Scheduler continues           Cancels CancellationTokenSource
-  in-memory countdown          and disposes active timer cleanly
-```
-
-- **Independence**: Power state schedules run entirely in memory inside the agent process (`System.Threading.CancellationTokenSource`).
-- **Resilience**: Temporary loss of backend connectivity does **not** interrupt an active countdown.
-- **Cancellation**: Issuing `CancelSchedule` instantly cancels active tokens and disposes timer tasks without shell process management.
-
----
-
-## 4. Security & Safety Model
-
-1. **Zero Dynamic Code Execution**:
-   - `System.Diagnostics.Process.Start("cmd.exe", ...)` is strictly prohibited.
-   - Command names map directly to hardcoded C# class handlers implementing `ICommand`.
-2. **Mutual Token Authentication**:
-   - Agents supply an `X-Agent-Token` header during WebSocket handshake.
-   - Skill calls Backend API using a shared `X-Skill-Secret`.
-3. **Payload Structure**:
-   ```json
-   {
-     "version": "1.0",
-     "command": "SET_VOLUME",
-     "params": {
-       "level": 50
-     },
-     "timestamp": 1721740000000
-   }
-   ```
+1. **Windows Boot**: Windows loads `AlexaPCAgent.exe` silently into the System Tray.
+2. **WebSocket Handshake**: Agent initiates `ClientWebSocket.ConnectAsync("wss://alexa-pc-control.onrender.com/ws")` with `X-Agent-Token` header.
+3. **Connection Registry**: Render Backend registers the active socket in memory.
+4. **Keepalive**: Render and Agent exchange ping/pong keepalive frames every 30 seconds.
+5. **Voice Execution**:
+   - User says *"Alexa, ask my computer to lock the PC"*.
+   - Alexa Skill sends HTTP POST to Render `/api/command`.
+   - Render pushes JSON payload over the active WSS socket to `AlexaPCAgent`.
+   - `AlexaPCAgent` executes `user32.dll!LockWorkStation()` natively.

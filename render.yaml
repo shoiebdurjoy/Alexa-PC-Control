@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: alexa-pc-control-backend
+    env: node
+    region: oregon
+    plan: starter
+    rootDir: backend-api
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.12.2
+      - key: AGENT_SECRET_TOKEN
+        sync: false
+      - key: ALEXA_SKILL_SECRET
+        sync: false
+    healthCheckPath: /health

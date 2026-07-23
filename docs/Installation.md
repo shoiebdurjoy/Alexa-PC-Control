@@ -1,78 +1,67 @@
-# Installation Guide
+# Installation & Deployment Guide (Render 24/7 Setup)
 
-This document provides complete instructions for deploying and setting up **Alexa-PC-Control** across the Windows Workstation, Backend API Server, and Alexa Developer Console.
-
----
-
-## Prerequisites
-
-- **Windows PC**: Windows 10 or Windows 11 (64-bit).
-- **.NET Runtime**: .NET 8.0 SDK / Desktop Runtime.
-- **Node.js**: Node.js 18.x or later and `npm`.
-- **Amazon Developer Account**: Free account to host Alexa Custom Skill.
+This guide walks through deploying the **Backend API to Render**, setting up the **Alexa Custom Skill**, and configuring your **Windows PC Agent** for automatic startup.
 
 ---
 
-## 1. Windows PC Agent Setup
+## Step 1: Deploy Backend API to Render (24/7 Free / Starter Web Service)
 
-1. **Build / Publish Application**:
+1. Log into your [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** -> **Web Service**.
+3. Connect your GitHub account and select repository **`shoiebdurjoy/Alexa-PC-Control`**.
+4. Configure service settings:
+   - **Name**: `alexa-pc-control-backend`
+   - **Root Directory**: `backend-api`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+5. **Environment Variables**:
+   Add the following variables in Render Dashboard under **Environment**:
+   - `AGENT_SECRET_TOKEN`: `Select_A_Strong_Random_Secret_Token_For_PC_Agent`
+   - `ALEXA_SKILL_SECRET`: `Select_A_Strong_Random_Secret_For_Alexa_Skill`
+6. Click **Create Web Service**.
+7. Render will build and deploy your service at a public URL (e.g. `https://alexa-pc-control-backend.onrender.com`).
+
+---
+
+## Step 2: Configure Alexa Custom Skill
+
+1. Log into [Amazon Developer Console](https://developer.amazon.com/alexa/console/ask).
+2. Open or Create a Custom Skill named **`Alexa PC Control`**.
+3. **Interaction Model**:
+   - Go to **Build** -> **Interaction Model** -> **JSON Editor**.
+   - Paste contents of `alexa-skill/interactionModels/custom/en-US.json`.
+   - Click **Save Model** and **Build Model**.
+4. **Lambda / Endpoint Configuration**:
+   - Set environment variables in your Alexa Lambda function:
+     - `BACKEND_API_URL`: `https://alexa-pc-control-backend.onrender.com/api/command`
+     - `SKILL_SECRET`: `(Your ALEXA_SKILL_SECRET from Step 1)`
+   - Click **Save** and **Deploy**.
+
+---
+
+## Step 3: Configure Windows PC Agent
+
+1. Open `windows-pc-agent/src/AlexaPCAgent/appsettings.json` on your PC:
+   ```json
+   {
+     "BackendWebSocketUrl": "wss://alexa-pc-control-backend.onrender.com/ws",
+     "AgentToken": "Select_A_Strong_Random_Secret_Token_For_PC_Agent",
+     "AutoStart": true
+   }
+   ```
+2. Build / Publish executable:
    ```bash
    cd windows-pc-agent/src/AlexaPCAgent
    dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
    ```
-2. **Configuration**:
-   Copy `appsettings.json` alongside the generated executable:
-   ```json
-   {
-     "BackendWebSocketUrl": "wss://your-backend-api-domain.com/ws",
-     "AgentToken": "YOUR_SECURE_AGENT_SECRET_TOKEN",
-     "AutoStart": true
-   }
-   ```
-3. **Run Agent**:
-   - Double-click `AlexaPCAgent.exe`.
-   - The application will run silently in your System Tray.
-   - Right-click the system tray icon to check status or enable **Start with Windows**.
+3. Run `AlexaPCAgent.exe`.
+   - The agent will connect outward to your Render backend via WSS (`wss://alexa-pc-control-backend.onrender.com/ws`).
+   - The system tray icon will display **Status: Online (Connected)**.
+   - It will automatically launch every time Windows boots up. Zero port forwarding needed!
 
 ---
 
-## 2. Backend API Server Setup
+## Step 4: Verification
 
-1. **Navigate to directory**:
-   ```bash
-   cd backend-api
-   npm install
-   ```
-2. **Configure Environment (`.env`)**:
-   ```env
-   PORT=8080
-   AGENT_SECRET_TOKEN=YOUR_SECURE_AGENT_SECRET_TOKEN
-   ALEXA_SKILL_SECRET=YOUR_SECURE_SKILL_SECRET
-   ```
-3. **Start Production Server**:
-   ```bash
-   npm run build
-   npm start
-   ```
-
----
-
-## 3. Alexa Custom Skill Setup
-
-1. Log into [Amazon Developer Console](https://developer.amazon.com/alexa/console/ask).
-2. Create a new Skill:
-   - **Name**: `Alexa PC Control`
-   - **Model**: Custom
-   - **Hosting**: Alexa-Hosted (Node.js) or AWS Lambda
-3. **Import Interaction Model**:
-   - Go to **Build** -> **Interaction Model** -> **JSON Editor**.
-   - Paste the contents of `alexa-skill/interactionModels/custom/en-US.json`.
-   - Save & Build Model.
-4. **Deploy Lambda Code**:
-   - Copy handler code from `alexa-skill/lambda/` into the code editor.
-   - Set environment variables (`BACKEND_API_URL` and `SKILL_SECRET`).
-   - Click **Deploy**.
-5. **Testing**:
-   - Go to **Test** tab in Alexa Console.
-   - Enable testing for "Development".
-   - Say: `"ask my computer to lock the PC"`.
+Say: *"Alexa, ask my computer to lock the PC"*!
