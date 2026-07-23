@@ -13,84 +13,82 @@ app.use(express.json({ limit: '10kb' }));
 const tokenValidator = new TokenValidator(config.agentSecretToken, config.alexaSkillSecret);
 const connectionManager = new ConnectionManager();
 
-// Health check endpoint for Render
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', uptime: Math.round(process.uptime()), activeAgents: connectionManager.getActiveCount() });
+app.get('/health', (_req: express.Request, res: express.Response): void => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: Math.round(process.uptime()),
+    activeAgents: connectionManager.getActiveCount()
+  });
 });
 
-// Secure REST Router for Alexa Skill
 app.use('/api', tokenValidator.validateSkillSecretMiddleware, createCommandRouter(connectionManager));
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
-server.on('upgrade', (request, socket, head) => {
+server.on('upgrade', (request: http.IncomingMessage, socket: import('stream').Duplex, head: Buffer): void => {
   const agentTokenHeader = request.headers['x-agent-token'];
   const deviceIdHeader = (request.headers['x-device-id'] as string) || 'default-pc';
 
   if (!tokenValidator.validateAgentToken(agentTokenHeader)) {
-    console.warn(`[Security Warning] Unauthorized WebSocket connection attempt from ${request.socket.remoteAddress}`);
+    console.warn(`[Security] Unauthorized WebSocket attempt from ${request.socket.remoteAddress}`);
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     socket.destroy();
     return;
   }
 
-  wss.handleUpgrade(request, socket, head, (ws) => {
+  wss.handleUpgrade(request, socket, head, (ws: WebSocket): void => {
     wss.emit('connection', ws, request, deviceIdHeader);
   });
 });
 
-wss.on('connection', (ws: WebSocket, request: http.IncomingMessage, deviceId: string) => {
+wss.on('connection', (ws: WebSocket, _request: http.IncomingMessage, deviceId: string): void => {
   connectionManager.registerAgent(deviceId, ws);
 
-  ws.on('close', () => {
+  ws.on('close', (): void => {
     connectionManager.unregisterAgent(deviceId);
   });
 
-  ws.on('error', (err) => {
+  ws.on('error', (err: Error): void => {
     console.error(`[WebSocket Error] Agent ${deviceId}:`, err.message);
   });
 });
 
-// Ping/Pong keepalive loop every 30 seconds
-const pingInterval = setInterval(() => {
-  wss.clients.forEach((ws) => {
+const pingInterval = setInterval((): void => {
+  wss.clients.forEach((ws: WebSocket): void => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
     }
   });
 }, 30000);
 
-server.listen(config.port, () => {
+server.listen(config.port, (): void => {
   console.log(`=======================================================`);
-  console.log(` Alexa-PC-Control Backend API Server (v1.1.0)`);
+  console.log(` Alexa-PC-Control Backend API Server (v1.2.0)`);
   console.log(` Environment: ${config.nodeEnv}`);
-  console.log(` Listening on Port: ${config.port}`);
-  console.log(` Health Endpoint: http://0.0.0.0:${config.port}/health`);
+  console.log(` Port: ${config.port}`);
+  console.log(` Health: http://0.0.0.0:${config.port}/health`);
   console.log(`=======================================================`);
 });
 
-// Graceful Shutdown Handling
-function gracefulShutdown(signal: string) {
-  console.log(`[Server Shutdown] Received ${signal}. Closing HTTP and WebSocket connections...`);
+function gracefulShutdown(signal: string): void {
+  console.log(`[Shutdown] Received ${signal}. Closing connections...`);
   clearInterval(pingInterval);
 
-  wss.clients.forEach((ws) => {
-    try {
-      ws.close(1001, 'Server shutting down');
-    } catch {}
+  wss.clients.forEach((ws: WebSocket): void => {
+    try { ws.close(1001, 'Server shutting down'); } catch (_e) { /* ignore */ }
   });
 
-  server.close(() => {
-    console.log('[Server Shutdown] HTTP server closed cleanly. Exiting.');
+  server.close((): void => {
+    console.log('[Shutdown] Clean exit.');
     process.exit(0);
   });
 
-  setTimeout(() => {
-    console.error('[Server Shutdown] Forced exit due to timeout.');
+  setTimeout((): void => {
+    console.error('[Shutdown] Forced exit.');
     process.exit(1);
   }, 10000);
 }
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', (): void => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', (): void => gracefulShutdown('SIGINT'));

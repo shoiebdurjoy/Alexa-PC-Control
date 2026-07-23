@@ -7,6 +7,18 @@ export interface ConnectedAgent {
   lastPing: number;
 }
 
+interface CommandPayload {
+  version: string;
+  command: string;
+  params: Record<string, unknown>;
+  timestamp: number;
+}
+
+interface CommandResponse {
+  command: string;
+  [key: string]: unknown;
+}
+
 export class ConnectionManager {
   private agents = new Map<string, ConnectedAgent>();
 
@@ -15,7 +27,7 @@ export class ConnectionManager {
     if (existing && existing.socket !== socket) {
       try {
         existing.socket.close(1000, 'Replaced by new connection');
-      } catch {}
+      } catch (_e) { /* ignore close errors */ }
     }
 
     this.agents.set(deviceId, {
@@ -25,13 +37,13 @@ export class ConnectionManager {
       lastPing: Date.now()
     });
 
-    console.log(`[ConnectionManager] Registered Agent: ${deviceId} (Total active: ${this.agents.size})`);
+    console.log(`[ConnectionManager] Registered Agent: ${deviceId} (Total: ${this.agents.size})`);
   }
 
   public unregisterAgent(deviceId: string): void {
     if (this.agents.has(deviceId)) {
       this.agents.delete(deviceId);
-      console.log(`[ConnectionManager] Unregistered Agent: ${deviceId} (Total active: ${this.agents.size})`);
+      console.log(`[ConnectionManager] Unregistered Agent: ${deviceId} (Total: ${this.agents.size})`);
     }
   }
 
@@ -39,47 +51,48 @@ export class ConnectionManager {
     if (deviceId && this.agents.has(deviceId)) {
       return this.agents.get(deviceId);
     }
-    // Return first connected agent if deviceId not specified
-    const firstKey = this.agents.keys().next().value;
-    return firstKey ? this.agents.get(firstKey) : undefined;
+    const iter = this.agents.values();
+    const first = iter.next();
+    return first.done ? undefined : first.value;
   }
 
   public getActiveCount(): number {
     return this.agents.size;
   }
 
-  public sendCommandToAgent(deviceId: string | undefined, payload: any): Promise<any> {
-    return new Promise((resolve, reject) => {
+  public sendCommandToAgent(deviceId: string | undefined, payload: CommandPayload): Promise<CommandResponse> {
+    return new Promise<CommandResponse>((resolve, reject) => {
       const agent = this.getAgent(deviceId);
       if (!agent || agent.socket.readyState !== WebSocket.OPEN) {
-        return reject(new Error('Target Windows PC Agent is not connected to backend WebSocket hub.'));
+        reject(new Error('Target Windows PC Agent is not connected.'));
+        return;
       }
 
       const jsonPayload = JSON.stringify(payload);
       const timeout = setTimeout(() => {
         cleanup();
-        reject(new Error('Agent execution response timed out.'));
+        reject(new Error('Agent response timed out.'));
       }, 5000);
 
-      const messageHandler = (data: any) => {
+      const messageHandler = (data: Buffer | ArrayBuffer | Buffer[]): void => {
         try {
-          const response = JSON.parse(data.toString());
+          const response: CommandResponse = JSON.parse(data.toString());
           if (response.command === payload.command) {
             cleanup();
             resolve(response);
           }
-        } catch (e) {
-          // Ignore non-matching message frames
+        } catch (_e) {
+          /* ignore non-matching frames */
         }
       };
 
-      const cleanup = () => {
+      const cleanup = (): void => {
         clearTimeout(timeout);
         agent.socket.removeListener('message', messageHandler);
       };
 
       agent.socket.on('message', messageHandler);
-      agent.socket.send(jsonPayload, (err) => {
+      agent.socket.send(jsonPayload, (err?: Error) => {
         if (err) {
           cleanup();
           reject(err);

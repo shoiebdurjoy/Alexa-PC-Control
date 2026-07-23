@@ -5,11 +5,9 @@ services:
     region: oregon
     plan: starter
     rootDir: backend-api
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
-      - key: NODE_VERSION
-        value: 20.12.2
       - key: AGENT_SECRET_TOKEN
         sync: false
       - key: ALEXA_SKILL_SECRET

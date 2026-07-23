@@ -29,7 +29,7 @@ export class TokenValidator {
     const value = Array.isArray(headerSecret) ? headerSecret[0] : headerSecret;
 
     if (!value || !this.safeCompare(value, this.skillSecret)) {
-      res.status(401).json({ success: false, message: 'Unauthorized: Invalid or missing X-Skill-Secret header' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
     next();

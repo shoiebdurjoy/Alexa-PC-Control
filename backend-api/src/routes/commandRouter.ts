@@ -16,17 +16,26 @@ const ALLOWED_COMMANDS = new Set([
   'GET_STATUS'
 ]);
 
+interface CommandRequestBody {
+  command?: string;
+  params?: Record<string, unknown>;
+  deviceId?: string;
+}
+
 export function createCommandRouter(connectionManager: ConnectionManager): Router {
   const router = Router();
 
   const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 60, // 60 requests per minute limit
-    message: { success: false, message: 'Too many command requests. Rate limit exceeded.' }
+    max: 60,
+    message: { success: false, message: 'Rate limit exceeded.' }
   });
 
-  router.post('/command', apiLimiter, async (req: Request, res: Response) => {
-    const { command, params, deviceId } = req.body || {};
+  router.post('/command', apiLimiter, async (req: Request, res: Response): Promise<void> => {
+    const body = req.body as CommandRequestBody;
+    const command = body.command;
+    const params = body.params;
+    const deviceId = body.deviceId;
 
     if (!command || typeof command !== 'string') {
       res.status(400).json({ success: false, message: 'Invalid or missing command string.' });
@@ -49,16 +58,14 @@ export function createCommandRouter(connectionManager: ConnectionManager): Route
 
       const result = await connectionManager.sendCommandToAgent(deviceId, payload);
       res.json(result);
-    } catch (error: any) {
-      console.error('[CommandRouter Error]:', error.message);
-      res.status(502).json({
-        success: false,
-        message: error.message || 'Failed to dispatch command to PC agent'
-      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to dispatch command to PC agent';
+      console.error('[CommandRouter Error]:', message);
+      res.status(502).json({ success: false, message });
     }
   });
 
-  router.get('/status', (req: Request, res: Response) => {
+  router.get('/status', (_req: Request, res: Response): void => {
     res.json({
       status: 'online',
       activeAgents: connectionManager.getActiveCount(),
