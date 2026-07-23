@@ -72,6 +72,8 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
     const intentName = envelope.request.intent.name;
     const slots = envelope.request.intent.slots || {};
 
+    console.log(`[Alexa Router] [ReqID: ${alexaRequestId}] Incoming Intent: ${intentName} | Slots: ${JSON.stringify(slots)}`);
+
     try {
       let command = '';
       let params: Record<string, unknown> = {};
@@ -81,6 +83,11 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
         case 'LockIntent':
           command = 'LOCK';
           responseMessage = 'Locking your PC.';
+          break;
+
+        case 'AMAZON.StartOverIntent':
+          command = 'RESTART';
+          responseMessage = 'PC restart initiated.';
           break;
 
         case 'PowerIntent': {
