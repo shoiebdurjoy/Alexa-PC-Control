@@ -14,9 +14,9 @@ namespace AlexaPCAgent.Services
 
         public object GetSystemStatus()
         {
-            float volumePercent = Math.Round(CoreAudioApi.GetMasterVolume(), 1);
+            float volumePercent = (float)Math.Round(CoreAudioApi.GetMasterVolume(), 1);
             bool isMuted = CoreAudioApi.GetMute();
-            long uptimeSeconds = Environment.TickCount64 / 1000;
+            long uptimeSeconds = Environment.TickCount / 1000;
             int activeSchedules = _scheduler.GetActiveScheduleCount();
 
             return new

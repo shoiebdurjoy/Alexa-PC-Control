@@ -87,7 +87,7 @@ namespace AlexaPCAgent.Commands
         public Task<CommandResult> ExecuteAsync(CommandPayload payload, CancellationToken cancellationToken)
         {
             int level = payload.Params?.VolumePercent ?? 50;
-            level = Math.Clamp(level, 0, 100);
+            level = Math.Max(0, Math.Min(100, level));
 
             bool success = CoreAudioApi.SetMasterVolume(level);
             if (success)

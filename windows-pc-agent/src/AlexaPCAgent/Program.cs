@@ -10,7 +10,8 @@ namespace AlexaPCAgent
         [STAThread]
         static void Main()
         {
-            ApplicationConfiguration.Initialize();
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
             string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
             string backendUrl = "wss://localhost:8080/ws";

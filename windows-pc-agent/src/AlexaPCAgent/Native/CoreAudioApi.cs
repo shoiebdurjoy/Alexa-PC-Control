@@ -74,7 +74,7 @@ namespace AlexaPCAgent.Native
         {
             var volume = GetEndpointVolume();
             if (volume == null) return false;
-            float scalar = Math.Clamp(percent / 100f, 0f, 1f);
+            float scalar = Math.Max(0f, Math.Min(1f, percent / 100f));
             Guid guid = Guid.Empty;
             return volume.SetMasterVolumeLevelScalar(scalar, ref guid) == 0;
         }
