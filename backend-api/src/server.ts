@@ -61,6 +61,17 @@ server.on('upgrade', (request: http.IncomingMessage, socket: import('stream').Du
 wss.on('connection', (ws: WebSocket, _request: http.IncomingMessage, deviceId: string): void => {
   connectionManager.registerAgent(deviceId, ws);
 
+  ws.on('message', (rawData: any): void => {
+    try {
+      const data = JSON.parse(rawData.toString());
+      if (data && data.type === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+      }
+    } catch (_e) {
+      // Ignore parse errors, let command handlers process their messages
+    }
+  });
+
   ws.on('close', (): void => {
     connectionManager.unregisterAgent(deviceId);
   });

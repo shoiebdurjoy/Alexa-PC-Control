@@ -411,6 +411,7 @@ function executeCommand(payload) {
 }
 
 let heartbeatTimeout = null;
+let pingInterval = null;
 
 function connect() {
   console.log(`[${new Date().toISOString()}] [Agent] Connecting to ${BACKEND_URL}...`);
@@ -424,7 +425,7 @@ function connect() {
 
   function heartbeat() {
     clearTimeout(heartbeatTimeout);
-    // Server sends ping every 30s. If we don't get any ping or message in 45s, terminate.
+    // If we don't get any ping, pong, or message in 45s, terminate.
     heartbeatTimeout = setTimeout(() => {
       console.warn(`[${new Date().toISOString()}] [Agent] No heartbeat from server in 45s. Terminating connection...`);
       if (ws) {
@@ -437,12 +438,25 @@ function connect() {
     console.log(`[${new Date().toISOString()}] [Agent] Connected to Render backend. Device: ${DEVICE_ID}`);
     retryDelay = 2000;
     heartbeat();
+
+    // Start sending JSON pings every 25 seconds to keep Render connection alive
+    clearInterval(pingInterval);
+    pingInterval = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+      }
+    }, 25000);
   });
 
   ws.on('message', (data) => {
     heartbeat();
     try {
       const payload = JSON.parse(data.toString());
+      if (payload && payload.type === 'pong') {
+        // Heartbeat pong, skip execution processing
+        return;
+      }
+
       const requestId = payload.requestId || 'unknown-req-id';
       console.log(`[${new Date().toISOString()}] [Agent] [ReqID: ${requestId}] Received command: ${payload.command}`);
 
@@ -467,6 +481,7 @@ function connect() {
 
   ws.on('close', (code, reason) => {
     clearTimeout(heartbeatTimeout);
+    clearInterval(pingInterval);
     console.log(`[${new Date().toISOString()}] [Agent] Disconnected (code: ${code}). Reconnecting in ${retryDelay / 1000}s...`);
     const jitter = Math.random() * 1000;
     setTimeout(connect, retryDelay + jitter);
