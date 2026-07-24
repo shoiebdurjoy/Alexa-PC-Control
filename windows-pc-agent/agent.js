@@ -44,10 +44,10 @@ const activePowerTimers = new Map(); // Key: 'POWER_ACTION', Value: { timeoutId,
 function triggerImmediatePowerAction(action) {
   switch (action) {
     case 'SHUTDOWN':
-      execSync('shutdown /s /t 0 /f');
+      execSync('shutdown /s /t 0');
       break;
     case 'RESTART':
-      execSync('shutdown /r /t 0 /f');
+      execSync('shutdown /r /t 0');
       break;
     case 'SLEEP':
       execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0');

@@ -101,14 +101,32 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
           break;
 
         case 'PowerIntent': {
-          const rawAction = slots.Action?.value?.toLowerCase() || 'shutdown';
+          const actionSlot = slots.Action;
+          const resolvedAction = getResolvedSlotValue(actionSlot).toLowerCase();
           const durationVal = slots.DurationMinutes?.value;
           const durationMinutes = durationVal ? parseInt(durationVal, 10) : 0;
 
-          command = 'SHUTDOWN';
-          if (rawAction.includes('sleep') || rawAction.includes('standby')) command = 'SLEEP';
-          if (rawAction.includes('restart') || rawAction.includes('reboot')) command = 'RESTART';
+          console.log(`[PowerIntent Debug] Received Action slot: ${actionSlot?.value || 'undefined'}`);
+          console.log(`[PowerIntent Debug] Resolved Action: ${resolvedAction || 'undefined'}`);
 
+          if (!resolvedAction) {
+            res.json(buildAlexaResponse("I didn't understand which power action you wanted. Please say shutdown, restart, or sleep."));
+            return;
+          }
+
+          if (resolvedAction.includes('sleep') || resolvedAction.includes('standby')) {
+            command = 'SLEEP';
+          } else if (resolvedAction.includes('restart') || resolvedAction.includes('reboot')) {
+            command = 'RESTART';
+          } else if (resolvedAction.includes('shutdown') || resolvedAction.includes('shut down') || resolvedAction.includes('turn off') || resolvedAction.includes('power down') || resolvedAction.includes('deactivate') || resolvedAction.includes('switch off') || resolvedAction.includes('power off')) {
+            command = 'SHUTDOWN';
+          } else {
+            console.log(`[PowerIntent Debug] Unrecognized power action: "${resolvedAction}"`);
+            res.json(buildAlexaResponse("I didn't understand which power action you wanted. Please say shutdown, restart, or sleep."));
+            return;
+          }
+
+          console.log(`[PowerIntent Debug] Executing command: ${command}`);
           params = { durationMinutes };
           responseMessage = durationMinutes > 0
             ? `Scheduling ${command.toLowerCase()} in ${durationMinutes} minutes.`
@@ -168,6 +186,10 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
 
         case 'AMAZON.HelpIntent':
           res.json(buildAlexaResponse('You can say lock the PC, set volume to fifty percent, mute, or ask for status.'));
+          return;
+
+        case 'AMAZON.FallbackIntent':
+          res.json(buildAlexaResponse("I didn't understand that command. Please say something like, ask my computer to lock, or ask my computer to shutdown."));
           return;
 
         case 'AMAZON.CancelIntent':
