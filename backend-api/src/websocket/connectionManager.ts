@@ -49,10 +49,15 @@ export class ConnectionManager {
     logEvent(`[Registry Register] Agent '${deviceId}' registered successfully. Active agents: ${this.agents.size} | Connected IPs: ${Array.from(this.agents.keys()).join(', ')}`);
   }
 
-  public unregisterAgent(deviceId: string): void {
-    if (this.agents.has(deviceId)) {
-      this.agents.delete(deviceId);
-      logEvent(`[Registry Unregister] Agent '${deviceId}' unregistered. Active agents remaining: ${this.agents.size}`);
+  public unregisterAgent(deviceId: string, socket: WebSocket): void {
+    const existing = this.agents.get(deviceId);
+    if (existing) {
+      if (existing.socket === socket) {
+        this.agents.delete(deviceId);
+        logEvent(`[Registry Unregister] Agent '${deviceId}' unregistered. Active agents remaining: ${this.agents.size}`);
+      } else {
+        logEvent(`[Registry Unregister Ignored] Stale close event for '${deviceId}' ignored (already replaced).`);
+      }
     } else {
       logEvent(`[Registry Unregister Warning] Attempted to unregister untracked agent '${deviceId}'`);
     }

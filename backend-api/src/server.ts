@@ -89,7 +89,7 @@ wss.on('connection', (ws: WebSocket, _request: http.IncomingMessage, deviceId: s
 
   ws.on('close', (code: number, reason: string): void => {
     logEvent(`[WebSocket Disconnect] Agent ${deviceId} disconnected. Code: ${code} | Reason: ${reason || 'None'}`);
-    connectionManager.unregisterAgent(deviceId);
+    connectionManager.unregisterAgent(deviceId, ws);
   });
 
   ws.on('error', (err: Error): void => {
