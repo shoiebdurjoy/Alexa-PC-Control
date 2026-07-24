@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws';
+import { logEvent } from '../logger';
 
 export interface ConnectedAgent {
   deviceId: string;
@@ -29,10 +30,13 @@ export class ConnectionManager {
 
   public registerAgent(deviceId: string, socket: WebSocket): void {
     const existing = this.agents.get(deviceId);
-    if (existing && existing.socket !== socket) {
-      try {
-        existing.socket.close(1000, 'Replaced by new connection');
-      } catch (_e) { /* ignore close errors */ }
+    if (existing) {
+      logEvent(`[Registry Override] Existing connection found for device ${deviceId}. Socket state: ${existing.socket.readyState}. Overriding...`);
+      if (existing.socket !== socket) {
+        try {
+          existing.socket.close(1000, 'Replaced by new connection');
+        } catch (_e) { /* ignore close errors */ }
+      }
     }
 
     this.agents.set(deviceId, {
@@ -42,13 +46,15 @@ export class ConnectionManager {
       lastPing: Date.now()
     });
 
-    console.log(`[ConnectionManager] Registered Agent: ${deviceId} (Total: ${this.agents.size})`);
+    logEvent(`[Registry Register] Agent '${deviceId}' registered successfully. Active agents: ${this.agents.size} | Connected IPs: ${Array.from(this.agents.keys()).join(', ')}`);
   }
 
   public unregisterAgent(deviceId: string): void {
     if (this.agents.has(deviceId)) {
       this.agents.delete(deviceId);
-      console.log(`[ConnectionManager] Unregistered Agent: ${deviceId} (Total: ${this.agents.size})`);
+      logEvent(`[Registry Unregister] Agent '${deviceId}' unregistered. Active agents remaining: ${this.agents.size}`);
+    } else {
+      logEvent(`[Registry Unregister Warning] Attempted to unregister untracked agent '${deviceId}'`);
     }
   }
 
@@ -69,8 +75,13 @@ export class ConnectionManager {
     const startTime = Date.now();
     return new Promise<CommandResponse>((resolve, reject) => {
       const agent = this.getAgent(deviceId);
-      if (!agent || agent.socket.readyState !== WebSocket.OPEN) {
-        console.warn(`[Command Audit] [ReqID: ${payload.requestId}] Failed to route command ${payload.command}. Agent offline.`);
+      if (!agent) {
+        logEvent(`[Command Route Error] [ReqID: ${payload.requestId}] Failed to route command ${payload.command}. Reason: No registered agents in map.`);
+        reject(new Error('Target Windows PC Agent is not connected.'));
+        return;
+      }
+      if (agent.socket.readyState !== WebSocket.OPEN) {
+        logEvent(`[Command Route Error] [ReqID: ${payload.requestId}] Failed to route command ${payload.command}. Reason: Agent socket not in OPEN state (Current state: ${agent.socket.readyState}).`);
         reject(new Error('Target Windows PC Agent is not connected.'));
         return;
       }
@@ -78,7 +89,7 @@ export class ConnectionManager {
       const jsonPayload = JSON.stringify(payload);
       const timeout = setTimeout(() => {
         cleanup();
-        console.error(`[Command Audit] [ReqID: ${payload.requestId}] Command ${payload.command} execution timed out (5000ms).`);
+        logEvent(`[Command Route Timeout] [ReqID: ${payload.requestId}] Command ${payload.command} execution timed out (5000ms).`);
         reject(new Error('Agent response timed out.'));
       }, 5000);
 
@@ -89,11 +100,11 @@ export class ConnectionManager {
           if (response.command === payload.command && response.requestId === payload.requestId) {
             cleanup();
             const latency = Date.now() - startTime;
-            console.log(`[Command Audit] [ReqID: ${payload.requestId}] Command: ${payload.command} | Status: ${response.success ? 'SUCCESS' : 'FAILED'} | Latency: ${latency}ms | Message: ${response.message}`);
+            logEvent(`[Command Route Success] [ReqID: ${payload.requestId}] Command: ${payload.command} | Success: ${response.success} | Latency: ${latency}ms | Message: ${response.message}`);
             resolve(response);
           }
-        } catch (_e) {
-          /* ignore non-matching frames */
+        } catch (e: any) {
+          logEvent(`[Command Route Message Error] Failed parsing message during command execution: ${e.message}`);
         }
       };
 
@@ -106,8 +117,10 @@ export class ConnectionManager {
       agent.socket.send(jsonPayload, (err?: Error) => {
         if (err) {
           cleanup();
-          console.error(`[Command Audit] [ReqID: ${payload.requestId}] Failed to send socket command: ${err.message}`);
+          logEvent(`[Command Route Send Error] [ReqID: ${payload.requestId}] Failed to send command socket payload: ${err.message}`);
           reject(err);
+        } else {
+          logEvent(`[Command Route Sent] [ReqID: ${payload.requestId}] Command payload successfully sent to socket for ${agent.deviceId}`);
         }
       });
     });

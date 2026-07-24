@@ -7,6 +7,7 @@ import { TokenValidator } from './auth/tokenValidator';
 import { createCommandRouter } from './routes/commandRouter';
 import { createAlexaRouter } from './routes/alexaRouter';
 import { verifyAlexaRequest, ExtendedRequest } from './auth/alexaVerifier';
+import { logEvent, getLogs } from './logger';
 
 const config = loadAndValidateConfig();
 const app = express();
@@ -30,6 +31,11 @@ app.get('/health', (_req: express.Request, res: express.Response): void => {
   });
 });
 
+app.get('/logs', (_req: express.Request, res: express.Response): void => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.status(200).send(getLogs());
+});
+
 // Apply Alexa HTTPS signature validation ONLY to the /api/alexa endpoint
 app.post('/api/alexa', verifyAlexaRequest);
 
@@ -46,12 +52,16 @@ server.on('upgrade', (request: http.IncomingMessage, socket: import('stream').Du
   const agentTokenHeader = request.headers['x-agent-token'];
   const deviceIdHeader = (request.headers['x-device-id'] as string) || 'default-pc';
 
+  logEvent(`[Upgrade Request] Host: ${request.headers.host} | IP: ${request.socket.remoteAddress} | Device ID: ${deviceIdHeader} | Token Provided: ${agentTokenHeader ? 'Yes' : 'No'}`);
+
   if (!tokenValidator.validateAgentToken(agentTokenHeader)) {
-    console.warn(`[Security] Unauthorized WebSocket attempt from ${request.socket.remoteAddress}`);
+    logEvent(`[Upgrade Failure] Unauthorized attempt from ${request.socket.remoteAddress}. Invalid token: ${agentTokenHeader}`);
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     socket.destroy();
     return;
   }
+
+  logEvent(`[Upgrade Success] Token validated. Upgrading connection for Device ID: ${deviceIdHeader}...`);
 
   wss.handleUpgrade(request, socket, head, (ws: WebSocket): void => {
     wss.emit('connection', ws, request, deviceIdHeader);
@@ -59,25 +69,31 @@ server.on('upgrade', (request: http.IncomingMessage, socket: import('stream').Du
 });
 
 wss.on('connection', (ws: WebSocket, _request: http.IncomingMessage, deviceId: string): void => {
+  logEvent(`[WebSocket Connect] Agent ${deviceId} connected. Socket state: ${ws.readyState}`);
   connectionManager.registerAgent(deviceId, ws);
 
   ws.on('message', (rawData: any): void => {
     try {
       const data = JSON.parse(rawData.toString());
       if (data && data.type === 'ping') {
+        logEvent(`[Heartbeat Ping] Received JSON ping from agent: ${deviceId}`);
         ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+        logEvent(`[Heartbeat Pong] Sent JSON pong to agent: ${deviceId}`);
+      } else {
+        logEvent(`[WebSocket Message] Received data from agent ${deviceId}: ${rawData.toString().substring(0, 300)}`);
       }
-    } catch (_e) {
-      // Ignore parse errors, let command handlers process their messages
+    } catch (e: any) {
+      logEvent(`[WebSocket Message Error] Failed parsing frame from agent ${deviceId}: ${e.message}`);
     }
   });
 
-  ws.on('close', (): void => {
+  ws.on('close', (code: number, reason: string): void => {
+    logEvent(`[WebSocket Disconnect] Agent ${deviceId} disconnected. Code: ${code} | Reason: ${reason || 'None'}`);
     connectionManager.unregisterAgent(deviceId);
   });
 
   ws.on('error', (err: Error): void => {
-    console.error(`[WebSocket Error] Agent ${deviceId}:`, err.message);
+    logEvent(`[WebSocket Error] Agent ${deviceId}: ${err.message}`);
   });
 });
 
