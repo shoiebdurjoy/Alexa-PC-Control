@@ -44,13 +44,13 @@ const activePowerTimers = new Map(); // Key: 'POWER_ACTION', Value: { timeoutId,
 function triggerImmediatePowerAction(action) {
   switch (action) {
     case 'SHUTDOWN':
-      execSync('shutdown /s /t 0');
+      execSync('shutdown /s /t 0', { windowsHide: true });
       break;
     case 'RESTART':
-      execSync('shutdown /r /t 0');
+      execSync('shutdown /r /t 0', { windowsHide: true });
       break;
     case 'SLEEP':
-      execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0');
+      execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0', { windowsHide: true });
       break;
   }
 }
@@ -127,7 +127,7 @@ function executeCommand(payload) {
   switch (cmd) {
     case 'LOCK':
       try {
-        execSync('rundll32.exe user32.dll,LockWorkStation');
+        execSync('rundll32.exe user32.dll,LockWorkStation', { windowsHide: true });
         return { success: true, message: 'PC workstation locked.' };
       } catch (e) {
         return { success: false, message: 'Failed to lock workstation: ' + e.message };
@@ -184,7 +184,7 @@ function executeCommand(payload) {
     case 'CANCEL_SCHEDULE': {
       const cancelled = cancelActivePowerAction();
       // Also trigger shutdown /a in case any legacy OS-level timer is active
-      try { execSync('shutdown /a'); } catch (_) {}
+      try { execSync('shutdown /a', { windowsHide: true }); } catch (_) {}
       return { 
         success: true, 
         message: cancelled 
@@ -195,7 +195,7 @@ function executeCommand(payload) {
 
     case 'MUTE':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]173)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]173)"', { windowsHide: true });
         return { success: true, message: 'PC audio mute toggled.' };
       } catch (e) {
         return { success: false, message: 'Failed to toggle mute: ' + e.message };
@@ -203,7 +203,7 @@ function executeCommand(payload) {
 
     case 'UNMUTE':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]173)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]173)"', { windowsHide: true });
         return { success: true, message: 'PC audio unmute toggled.' };
       } catch (e) {
         return { success: false, message: 'Failed to toggle unmute: ' + e.message };
@@ -211,7 +211,7 @@ function executeCommand(payload) {
 
     case 'VOLUME_UP':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]175)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]175)"', { windowsHide: true });
         return { success: true, message: 'PC volume increased.' };
       } catch (e) {
         return { success: false, message: 'Failed to increase volume: ' + e.message };
@@ -219,7 +219,7 @@ function executeCommand(payload) {
 
     case 'VOLUME_DOWN':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]174)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]174)"', { windowsHide: true });
         return { success: true, message: 'PC volume decreased.' };
       } catch (e) {
         return { success: false, message: 'Failed to decrease volume: ' + e.message };
@@ -229,9 +229,9 @@ function executeCommand(payload) {
       const level = Math.max(0, Math.min(100, params.volumePercent || 50));
       try {
         try {
-          execSync(`nircmd.exe setsysvolume ${Math.round(level * 655.35)}`);
+          execSync(`nircmd.exe setsysvolume ${Math.round(level * 655.35)}`, { windowsHide: true });
         } catch (_) {
-          execSync(`powershell -Command "1..50 | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]174) }; 1..${Math.round(level / 2)} | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]175) }"`);
+          execSync(`powershell -Command "1..50 | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]174) }; 1..${Math.round(level / 2)} | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]175) }"`, { windowsHide: true });
         }
         return { success: true, message: `PC volume set to ${level} percent.` };
       } catch (e) {
@@ -242,7 +242,7 @@ function executeCommand(payload) {
     case 'MEDIA_PLAY':
     case 'MEDIA_PAUSE':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]179)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]179)"', { windowsHide: true });
         return { success: true, message: 'PC media play/pause toggled.' };
       } catch (e) {
         return { success: false, message: 'Failed to toggle media play/pause: ' + e.message };
@@ -250,7 +250,7 @@ function executeCommand(payload) {
 
     case 'MEDIA_NEXT':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]176)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]176)"', { windowsHide: true });
         return { success: true, message: 'PC media playing next track.' };
       } catch (e) {
         return { success: false, message: 'Failed to play next track: ' + e.message };
@@ -258,7 +258,7 @@ function executeCommand(payload) {
 
     case 'MEDIA_PREV':
       try {
-        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]177)"');
+        execSync('powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]177)"', { windowsHide: true });
         return { success: true, message: 'PC media playing previous track.' };
       } catch (e) {
         return { success: false, message: 'Failed to play previous track: ' + e.message };
@@ -278,27 +278,27 @@ function executeCommand(payload) {
       try {
         let isRunning = false;
         try {
-          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore', windowsHide: true });
           isRunning = true;
         } catch (_) {}
 
         if (isRunning) {
           const psCommand = `$wshell = New-Object -ComObject Wscript.Shell; $p = Get-Process -Name '${app.processName}' -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { $wshell.AppActivate($p.Id) }`;
-          execSync(`powershell -Command "${psCommand}"`, { stdio: 'ignore' });
+          execSync(`powershell -Command "${psCommand}"`, { stdio: 'ignore', windowsHide: true });
           return { success: true, message: `${app.name} is already running. Brought to foreground.` };
         } else {
           const resolvedCommand = app.launchCommand.replace(/%([^%]+)%/g, (_, name) => process.env[name] || '%'+name+'%');
           const { exec } = require('child_process');
-          exec(resolvedCommand, (err) => {
+          exec(resolvedCommand, { windowsHide: true }, (err) => {
             if (err) console.error(`[Agent] Failed to run launchCommand for ${app.name}:`, err.message);
           });
 
           // Wait and verify launch
           let launched = false;
           for (let i = 0; i < 5; i++) {
-            execSync(`powershell -Command "Start-Sleep -Seconds 1"`, { stdio: 'ignore' });
+            execSync(`powershell -Command "Start-Sleep -Seconds 1"`, { stdio: 'ignore', windowsHide: true });
             try {
-              execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+              execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore', windowsHide: true });
               launched = true;
               break;
             } catch (_) {}
@@ -329,7 +329,7 @@ function executeCommand(payload) {
       try {
         let isRunning = false;
         try {
-          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
+          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore', windowsHide: true });
           isRunning = true;
         } catch (_) {}
 
@@ -338,31 +338,39 @@ function executeCommand(payload) {
         }
 
         try {
-          execSync(`taskkill /IM "${app.processName}.exe"`, { stdio: 'ignore' });
+          execSync(`taskkill /IM "${app.processName}.exe"`, { stdio: 'ignore', windowsHide: true });
         } catch (_) {}
 
-        execSync(`powershell -Command "Start-Sleep -Seconds 3"`, { stdio: 'ignore' });
-
-        let remains = false;
-        try {
-          execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
-          remains = true;
-        } catch (_) {}
+        // Poll process presence up to 6 times (500ms sleep, total 3 seconds max)
+        let remains = true;
+        for (let i = 0; i < 6; i++) {
+          execSync(`powershell -Command "Start-Sleep -Milliseconds 500"`, { stdio: 'ignore', windowsHide: true });
+          try {
+            execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore', windowsHide: true });
+          } catch (_) {
+            remains = false;
+            break;
+          }
+        }
 
         if (remains) {
           const allowForce = app.allowForceKill === true;
           if (allowForce) {
             try {
-              execSync(`taskkill /F /IM "${app.processName}.exe"`, { stdio: 'ignore' });
+              execSync(`taskkill /F /IM "${app.processName}.exe"`, { stdio: 'ignore', windowsHide: true });
             } catch (_) {}
 
-            // Wait 1 second and verify it has exited
-            execSync(`powershell -Command "Start-Sleep -Seconds 1"`, { stdio: 'ignore' });
-            let stillRemains = false;
-            try {
-              execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore' });
-              stillRemains = true;
-            } catch (_) {}
+            // Poll force-kill verification up to 4 times (250ms sleep, total 1s max)
+            let stillRemains = true;
+            for (let j = 0; j < 4; j++) {
+              execSync(`powershell -Command "Start-Sleep -Milliseconds 250"`, { stdio: 'ignore', windowsHide: true });
+              try {
+                execSync(`powershell -Command "Get-Process -Name '${app.processName}' -ErrorAction Stop"`, { stdio: 'ignore', windowsHide: true });
+              } catch (_) {
+                stillRemains = false;
+                break;
+              }
+            }
 
             if (stillRemains) {
               return { success: false, message: `Failed to close ${app.name}: The process remains active after force-kill.` };
