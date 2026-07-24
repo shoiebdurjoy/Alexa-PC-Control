@@ -410,6 +410,8 @@ function executeCommand(payload) {
   }
 }
 
+let heartbeatTimeout = null;
+
 function connect() {
   console.log(`[${new Date().toISOString()}] [Agent] Connecting to ${BACKEND_URL}...`);
 
@@ -420,12 +422,25 @@ function connect() {
     }
   });
 
+  function heartbeat() {
+    clearTimeout(heartbeatTimeout);
+    // Server sends ping every 30s. If we don't get any ping or message in 45s, terminate.
+    heartbeatTimeout = setTimeout(() => {
+      console.warn(`[${new Date().toISOString()}] [Agent] No heartbeat from server in 45s. Terminating connection...`);
+      if (ws) {
+        try { ws.terminate(); } catch (_) {}
+      }
+    }, 45000);
+  }
+
   ws.on('open', () => {
     console.log(`[${new Date().toISOString()}] [Agent] Connected to Render backend. Device: ${DEVICE_ID}`);
     retryDelay = 2000;
+    heartbeat();
   });
 
   ws.on('message', (data) => {
+    heartbeat();
     try {
       const payload = JSON.parse(data.toString());
       const requestId = payload.requestId || 'unknown-req-id';
@@ -451,6 +466,7 @@ function connect() {
   });
 
   ws.on('close', (code, reason) => {
+    clearTimeout(heartbeatTimeout);
     console.log(`[${new Date().toISOString()}] [Agent] Disconnected (code: ${code}). Reconnecting in ${retryDelay / 1000}s...`);
     const jitter = Math.random() * 1000;
     setTimeout(connect, retryDelay + jitter);
@@ -462,7 +478,7 @@ function connect() {
   });
 
   ws.on('ping', () => {
-    // ws library auto-responds with pong
+    heartbeat();
   });
 }
 

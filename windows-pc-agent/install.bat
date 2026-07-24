@@ -10,6 +10,10 @@ echo Installing to: %INSTALL_DIR%
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
 echo.
+echo Terminating any running agent processes...
+taskkill /F /IM AlexaPCAgent.exe >nul 2>&1
+
+echo.
 echo [1/3] Copying files...
 copy /Y "AlexaPCAgent.exe" "%INSTALL_DIR%\AlexaPCAgent.exe" >nul
 copy /Y "AlexaPCAgent.vbs" "%INSTALL_DIR%\AlexaPCAgent.vbs" >nul
