@@ -42,6 +42,8 @@
             }
           ],
           "samples": [
+            "{Action}",
+            "{Action} in {DurationMinutes} minutes",
             "put the PC to {Action}",
             "put the computer to {Action}",
             "{Action} the PC",

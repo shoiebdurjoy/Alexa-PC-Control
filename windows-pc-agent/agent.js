@@ -42,6 +42,10 @@ let ws = null;
 const activePowerTimers = new Map(); // Key: 'POWER_ACTION', Value: { timeoutId, action, scheduledTime }
 
 function triggerImmediatePowerAction(action) {
+  if (process.env.MOCK_POWER_ACTIONS === 'true') {
+    console.log(`[Agent] [MOCK] Triggered immediate power action: ${action}`);
+    return;
+  }
   switch (action) {
     case 'SHUTDOWN':
       execSync('shutdown /s /t 0', { windowsHide: true });
@@ -127,7 +131,11 @@ function executeCommand(payload) {
   switch (cmd) {
     case 'LOCK':
       try {
-        execSync('rundll32.exe user32.dll,LockWorkStation', { windowsHide: true });
+        if (process.env.MOCK_POWER_ACTIONS === 'true') {
+          console.log('[Agent] [MOCK] Triggered LockWorkStation');
+        } else {
+          execSync('rundll32.exe user32.dll,LockWorkStation', { windowsHide: true });
+        }
         return { success: true, message: 'PC workstation locked.' };
       } catch (e) {
         return { success: false, message: 'Failed to lock workstation: ' + e.message };
