@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { ConnectionManager, CommandResponse, CommandPayload } from '../websocket/connectionManager';
+import { logEvent } from '../logger';
 
 interface AlexaRequestEnvelope {
   session?: {
@@ -24,11 +25,12 @@ interface AlexaRequestEnvelope {
 }
 
 function getResolvedSlotValue(slot: any): string {
-  if (
-    slot?.resolutions?.resolutionsPerAuthority?.[0]?.status?.code === 'ER_SUCCESS_MATCH' &&
-    slot?.resolutions?.resolutionsPerAuthority?.[0]?.values?.[0]?.value?.name
-  ) {
-    return slot.resolutions.resolutionsPerAuthority[0].values[0].value.name;
+  if (slot?.resolutions?.resolutionsPerAuthority) {
+    for (const auth of slot.resolutions.resolutionsPerAuthority) {
+      if (auth?.status?.code === 'ER_SUCCESS_MATCH' && auth?.values?.[0]?.value?.name) {
+        return auth.values[0].value.name;
+      }
+    }
   }
   return slot?.value || '';
 }
@@ -44,7 +46,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
 
     // Optional: Validate Alexa Skill ID if configured to prevent unauthorized requests
     if (skillId && envelope.session?.application?.applicationId !== skillId) {
-      console.warn(`[Security Alert] Request rejected. Invalid Skill ID: ${envelope.session?.application?.applicationId}`);
+      logEvent(`[Security Alert] Request rejected. Invalid Skill ID: ${envelope.session?.application?.applicationId}`);
       res.status(403).json({ success: false, message: 'Forbidden: Invalid Alexa Skill ID' });
       return;
     }
@@ -55,7 +57,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
     // Prevent duplicate execution if Alexa retries the same request within its retry window
     if (envelope.request?.requestId) {
       if (processedAlexaRequestIds.has(alexaRequestId)) {
-        console.log(`[Deduplication] [ReqID: ${alexaRequestId}] Duplicate Alexa request ignored.`);
+        logEvent(`[Deduplication] [ReqID: ${alexaRequestId}] Duplicate Alexa request ignored.`);
         res.json(buildAlexaResponse('Ignoring duplicate command request.'));
         return;
       }
@@ -82,7 +84,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
     const intentName = envelope.request.intent.name;
     const slots = envelope.request.intent.slots || {};
 
-    console.log(`[Alexa Router] [ReqID: ${alexaRequestId}] Incoming Intent: ${intentName} | Slots: ${JSON.stringify(slots)}`);
+    logEvent(`[Alexa Router] [ReqID: ${alexaRequestId}] Incoming Intent: ${intentName} | Slots: ${JSON.stringify(slots)}`);
 
     try {
       let command = '';
@@ -106,8 +108,8 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
           const durationVal = slots.DurationMinutes?.value;
           const durationMinutes = durationVal ? parseInt(durationVal, 10) : 0;
 
-          console.log(`[PowerIntent Debug] Received Action slot: ${actionSlot?.value || 'undefined'}`);
-          console.log(`[PowerIntent Debug] Resolved Action: ${resolvedAction || 'undefined'}`);
+          logEvent(`[PowerIntent Debug] Received Action slot: ${actionSlot?.value || 'undefined'}`);
+          logEvent(`[PowerIntent Debug] Resolved Action: ${resolvedAction || 'undefined'}`);
 
           if (!resolvedAction) {
             res.json(buildAlexaResponse("I didn't understand which power action you wanted. Please say shutdown, restart, or sleep."));
@@ -121,12 +123,12 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
           } else if (resolvedAction.includes('shutdown') || resolvedAction.includes('shut down') || resolvedAction.includes('turn off') || resolvedAction.includes('power down') || resolvedAction.includes('deactivate') || resolvedAction.includes('switch off') || resolvedAction.includes('power off')) {
             command = 'SHUTDOWN';
           } else {
-            console.log(`[PowerIntent Debug] Unrecognized power action: "${resolvedAction}"`);
+            logEvent(`[PowerIntent Debug] Unrecognized power action: "${resolvedAction}"`);
             res.json(buildAlexaResponse("I didn't understand which power action you wanted. Please say shutdown, restart, or sleep."));
             return;
           }
 
-          console.log(`[PowerIntent Debug] Executing command: ${command}`);
+          logEvent(`[PowerIntent Debug] Executing command: ${command}`);
           params = { durationMinutes };
           responseMessage = durationMinutes > 0
             ? `Scheduling ${command.toLowerCase()} in ${durationMinutes} minutes.`
@@ -226,7 +228,7 @@ export function createAlexaRouter(connectionManager: ConnectionManager, skillId:
 
       res.json(buildAlexaResponse(responseMessage));
     } catch (error: any) {
-      console.error(`[AlexaRouter Error] [ReqID: ${alexaRequestId}]:`, error.message);
+      logEvent(`[AlexaRouter Error] [ReqID: ${alexaRequestId}]: ${error.message}`);
       const msg = error?.message || 'Internal server error';
       if (msg.includes('not connected')) {
         res.json(buildAlexaResponse('Your PC agent is not connected. Please make sure the agent is running on your computer.'));
